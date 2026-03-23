@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会议待办事项 — 2026.03.22</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.6; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 32px 24px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.6); }
+  .header .stats { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+  .header .stat { text-align: center; min-width: 60px; }
+  .header .stat-num { font-size: 26px; font-weight: 800; }
+  .header .stat-label { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; }
+  .stat-num.total { color: #fff; } .stat-num.done { color: #2ecc71; } .stat-num.pending { color: #f39c12; } .stat-num.urgent { color: #e74c3c; }
+  .progress-bar { height: 4px; background: rgba(255,255,255,0.1); margin-top: 16px; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #2ecc71, #27ae60); transition: width 0.4s ease; border-radius: 2px; }
+  .container { max-width: 860px; margin: 0 auto; padding: 20px 16px 80px; }
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-group { display: flex; gap: 6px; align-items: center; }
+  .filter-group-label { font-size: 12px; color: #999; margin-right: 4px; }
+  .filter-btn { padding: 6px 14px; border: 1px solid #e8e8e8; background: #fff; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .filter-btn:hover { border-color: #1a1a2e; }
+  .filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+  .filter-divider { width: 1px; background: #ddd; margin: 0 6px; align-self: stretch; }
+  .section { margin-bottom: 24px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: #fff; border-radius: 12px 12px 0 0; border: 1px solid #e8e8e8; border-bottom: none; cursor: pointer; user-select: none; }
+  .section-header:hover { background: #fafafa; }
+  .section-title { display: flex; align-items: center; gap: 10px; }
+  .section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .section-title h2 { font-size: 15px; font-weight: 700; }
+  .section-count { font-size: 12px; color: #999; background: #f0f2f5; padding: 2px 8px; border-radius: 10px; }
+  .section-toggle { font-size: 12px; color: #999; transition: transform 0.3s; }
+  .section-toggle.collapsed { transform: rotate(-90deg); }
+  .section-body { background: #fff; border: 1px solid #e8e8e8; border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; }
+  .section-body.collapsed { display: none; }
+  .todo-item { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #f0f2f5; transition: background 0.2s; }
+  .todo-item:last-child { border-bottom: none; }
+  .todo-item:hover { background: #fafbfc; }
+  .todo-item.done { opacity: 0.45; }
+  .todo-item.done .todo-text { text-decoration: line-through; color: #bbb; }
+  .todo-checkbox { width: 20px; height: 20px; border-radius: 6px; border: 2px solid #ddd; cursor: pointer; flex-shrink: 0; margin-top: 1px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .todo-checkbox:hover { border-color: #2ecc71; }
+  .todo-checkbox.checked { background: #2ecc71; border-color: #2ecc71; }
+  .todo-checkbox.checked::after { content: '\2713'; color: #fff; font-size: 12px; font-weight: 700; }
+  .todo-content { flex: 1; min-width: 0; }
+  .todo-text { font-size: 14px; line-height: 1.5; }
+  .todo-meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+  .todo-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .tag-urgent { background: #fde8e8; color: #e74c3c; }
+  .tag-normal { background: #e8f4fd; color: #3498db; }
+  .tag-date { background: #fef9e7; color: #f39c12; }
+  .tag-done { background: #e8f8f0; color: #27ae60; }
+  .tag-owner { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-lw { background: #ede7f6; color: #7e57c2; }
+  .tag-kg { background: #e3f2fd; color: #1976d2; }
+  .tag-ac { background: #e8f5e9; color: #388e3c; }
+  .tag-lw-kg { background: #fff3e0; color: #e65100; }
+  .tag-kg-ac { background: #e0f7fa; color: #00838f; }
+  .tag-lw-ac { background: #f3e5f5; color: #7b1fa2; }
+  .todo-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .todo-btn { width: 28px; height: 28px; border: none; background: transparent; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: #ccc; transition: all 0.2s; }
+  .todo-btn:hover { background: #f0f2f5; color: #666; }
+  .todo-btn.delete:hover { background: #fde8e8; color: #e74c3c; }
+  .timeline { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 20px 16px; margin-bottom: 24px; }
+  .timeline h2, .quotes h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .timeline-item { display: flex; gap: 16px; padding: 10px 0; position: relative; }
+  .timeline-item:not(:last-child)::after { content: ''; position: absolute; left: 15px; top: 38px; bottom: -10px; width: 2px; background: #e8e8e8; }
+  .timeline-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .timeline-dot.soon { background: #fef9e7; color: #f39c12; }
+  .timeline-dot.future { background: #e8f4fd; color: #3498db; }
+  .timeline-info { flex: 1; }
+  .timeline-date { font-size: 12px; color: #999; font-weight: 500; }
+  .timeline-text { font-size: 14px; margin-top: 2px; }
+  .quotes { background: #fff; border: 1px solid #e8e8e8; border-radius: 12px; padding: 20px 16px; margin-bottom: 24px; }
+  .quote-item { padding: 12px 0; border-bottom: 1px solid #f0f2f5; }
+  .quote-item:last-child { border-bottom: none; }
+  .quote-text { font-size: 13px; color: #555; font-style: italic; line-height: 1.6; padding-left: 12px; border-left: 3px solid #2ecc71; }
+  .quote-label { font-size: 11px; color: #999; margin-top: 4px; padding-left: 15px; }
+  @media (max-width: 600px) {
+    .header { padding: 24px 16px 20px; }
+    .header h1 { font-size: 18px; }
+    .header .stat-num { font-size: 22px; }
+    .container { padding: 16px 12px 60px; }
+    .todo-item { padding: 12px; }
+    .todo-actions { display: none; }
+    .filter-bar { gap: 6px; }
+    .filter-btn { padding: 5px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📋 会议待办事项</h1>
+  <p>2026年3月22日晚宴会议 — 老王 × 凯哥 × 阿超</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num total" id="stat-total">0</div><div class="stat-label">全部</div></div>
+    <div class="stat"><div class="stat-num done" id="stat-done">0</div><div class="stat-label">完成</div></div>
+    <div class="stat"><div class="stat-num pending" id="stat-pending">0</div><div class="stat-label">进行中</div></div>
+    <div class="stat"><div class="stat-num urgent" id="stat-urgent">0</div><div class="stat-label">紧急</div></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+</div>
+<div class="container">
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="filter-group-label">状态:</span>
+      <button class="filter-btn active" onclick="setFilter('status','all')">全部</button>
+      <button class="filter-btn" onclick="setFilter('status','urgent')">🔥紧急</button>
+      <button class="filter-btn" onclick="setFilter('status','pending')">⏳进行中</button>
+      <button class="filter-btn" onclick="setFilter('status','done')">✅已完成</button>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-group-label">执行人:</span>
+      <button class="filter-btn active" onclick="setFilter('owner','all')">全部</button>
+      <button class="filter-btn" onclick="setFilter('owner','老王')">🟣 老王</button>
+      <button class="filter-btn" onclick="setFilter('owner','凯哥')">🟠 凯哥</button>
+      <button class="filter-btn" onclick="setFilter('owner','阿超')">🟢 阿超</button>
+      <button class="filter-btn" onclick="setFilter('owner','老王+凯哥')">🟣🟠 老王&凯哥</button>
+      <button class="filter-btn" onclick="setFilter('owner','凯哥+阿超')">🟠🟢 凯哥&阿超</button>
+    </div>
+  </div>
+  <div id="sections"></div>
+  <div class="timeline" id="timeline"></div>
+  <div class="quotes" id="quotes"></div>
+</div>
+<script>
+var DATA = {
+  sections: [
+    { id:'hr', title:'👤 人事与管理', icon:'👥', color:'#3498db', items:[
+      {id:1,text:'发布党超副总经理任命函至全体员工群，明确管理权限（一票否决权、罚款权）',owner:'凯哥',tag:'紧急',date:'3/24'},
+      {id:2,text:'找律师咨询：①绩效工资合规性 ②合同改晚班的可行性',owner:'凯哥',tag:'紧急',date:'3/24'},
+      {id:3,text:'跟畅经理谈话 — 明确受党总/袁总管理，4月27日合同到期必须处理',owner:'阿超',tag:'紧急',date:'4/27前'},
+      {id:4,text:'剪辑部三人全部上绩效考核压力 — 王鹏留下，小鱼和阿辉月底淘汰不达标者',owner:'阿超',tag:'普通',date:''},
+      {id:5,text:'阿辉作品只剪到月底，之后不再使用',owner:'阿超',tag:'普通',date:'3/31'},
+      {id:6,text:'俊贤工作拉满 + 绩效对齐 — 产出不够只发底薪（1万）',owner:'阿超',tag:'普通',date:''},
+      {id:7,text:'要求剪辑部改晚班（下午4点-凌晨2点）— 律师确认后推行',owner:'阿超',tag:'普通',date:''},
+      {id:8,text:'管教练和王教练每天必须往群里发作业 — 雅丽监督，一天不发绩效清零',owner:'阿超',tag:'普通',date:''},
+      {id:9,text:'3-4月全公司裁人挤水分（26人→18人）',owner:'凯哥+阿超',tag:'普通',date:'3-4月'}
+    ]},
+    { id:'host', title:'🎙️ 主播与教练', icon:'🎤', color:'#e67e22', items:[
+      {id:10,text:'陈恳奶奶身体不好，下月可能请长假 — 邱教练提前顶上',owner:'阿超',tag:'普通',date:''},
+      {id:11,text:'温建林3/22-3/26休息 — 阿超主动顶抖音岗',owner:'阿超',tag:'普通',date:'3/22-26'},
+      {id:12,text:'邱教练试水主播岗，先给200元 — 表现好再给400',owner:'阿超',tag:'普通',date:''},
+      {id:13,text:'阿超主播岗600元起步（vs 教练400）— 不能让教练知道差距',owner:'凯哥',tag:'普通',date:''},
+      {id:14,text:'阿超封闭训练7天做主播备份（保险丝）',owner:'阿超',tag:'普通',date:''},
+      {id:15,text:'陈恳和邱教练不再培养为主播 — 安全风险考虑，暂不外招',owner:'凯哥',tag:'普通',date:''},
+      {id:16,text:'面试主播结果必须先跟凯哥汇报 — 不得私自决定',owner:'阿超',tag:'普通',date:''}
+    ]},
+    { id:'player', title:'🎱 选手策略', icon:'🎯', color:'#e74c3c', items:[
+      {id:17,text:'不签200万长约，改每月涨薪锁定严敏涛+李宝宝（涨1000-2000/月）',owner:'凯哥',tag:'紧急',date:''},
+      {id:18,text:'测试周赛模式（3+1+3）— 中间一天给其他家抬价',owner:'老王',tag:'紧急',date:'3/24起'},
+      {id:19,text:'确认周栋效果 — 已从5000涨到10000，作为第三个选手名额',owner:'阿超',tag:'普通',date:''},
+      {id:20,text:'跟超哥对接拿货 — 建立商业关系，暂不提选手',owner:'老王',tag:'普通',date:'3/24'},
+      {id:21,text:'关注苏丹红对严敏涛/李宝宝的邀约反应 — 及时跟进',owner:'阿超',tag:'普通',date:''}
+    ]},
+    { id:'biz', title:'💼 业务线（5月启动）', icon:'🚀', color:'#9b59b6', items:[
+      {id:22,text:'全国首家无烟台球预约制俱乐部 — 团购68元/小时，TV台88元',owner:'凯哥',tag:'普通',date:'5月'},
+      {id:23,text:'全国青少年台球俱乐部 — 周末儿童日套餐 + 公益体验课',owner:'凯哥',tag:'普通',date:'5月'},
+      {id:24,text:'线下私教课 + 传奇班 — 6000-7000元/月，单节500元',owner:'凯哥',tag:'普通',date:'5月'},
+      {id:25,text:'皮尔力直播间（球杆专场）',owner:'凯哥',tag:'普通',date:'5-6月'},
+      {id:26,text:'通类直播间（全品类配件）— 抄三号台球模式',owner:'凯哥+阿超',tag:'普通',date:'5-6月'},
+      {id:27,text:'自有品牌经销 — KO、PK、巧克、巴宝莉，直播间+经销双渠道',owner:'凯哥',tag:'普通',date:'5-6月'},
+      {id:28,text:'直播投流设置 — ROI设好自动跑',owner:'阿超',tag:'普通',date:'5-6月'},
+      {id:29,text:'主播话术培训筹备 — 有吴占良作业可抄',owner:'阿超',tag:'普通',date:'5-6月'},
+      {id:30,text:'跟赵金童师傅洽谈公益合作 — 短期活动，蹭赵青铜夺冠红利',owner:'老王',tag:'普通',date:''}
+    ]},
+    { id:'finance', title:'💰 库存与财务', icon:'📊', color:'#2ecc71', items:[
+      {id:31,text:'500-600张球杆库存消化 — 价值500-600万，核心资产包袱',owner:'老王+凯哥',tag:'紧急',date:''},
+      {id:32,text:'公司欠薪约150-200万 — 持续关注现金流',owner:'凯哥',tag:'紧急',date:''}
+    ]},
+    { id:'ai', title:'🤖 AI部门', icon:'💡', color:'#1abc9c', items:[
+      {id:33,text:'1-2个月内成立AI相关部门 — 用AI解决痛点、创造最小商业闭环',owner:'老王',tag:'普通',date:''},
+      {id:34,text:'批量制作AI台球启蒙绘本 — 已给小石头做了一套，有先发优势可卖',owner:'老王',tag:'普通',date:''}
+    ]},
+    { id:'training', title:'📚 培训与案例', icon:'🎓', color:'#34495e', items:[
+      {id:35,text:'明天把齐总批评人框架/资料传给阿超 — 凯哥承诺',owner:'凯哥',tag:'紧急',date:'3/24'},
+      {id:36,text:'阿超每天录几个版本的批评录音 — 标记最佳示范案例，共同学习',owner:'阿超',tag:'普通',date:''},
+      {id:37,text:'推荐阿超看《太平年》电视剧 — 五代十国题材，管理权力交接启发',owner:'老王',tag:'普通',date:''}
+    ]},
+    { id:'family', title:'🏠 家庭', icon:'❤️', color:'#e91e63', items:[
+      {id:38,text:'3/30晚 广州请阿超老婆吃漂亮饭 — 公司感谢仪式',owner:'凯哥',tag:'普通',date:'3/30'},
+      {id:39,text:'4月中下旬正式宴请阿超老婆 — 徐记或高档餐厅',owner:'凯哥',tag:'普通',date:'4月中下旬'},
+      {id:40,text:'每周至少陪老婆吃一次饭 — 中午去她公司也行，态度要对',owner:'阿超',tag:'普通',date:''},
+      {id:41,text:'给女儿的学生手机完成设置 — 控制APP、微信、视频号、QQ',owner:'老王',tag:'普通',date:''}
+    ]}
+  ],
+  timeline: [
+    {date:'3/24（明天）',text:'任命函发布 + 律师咨询 + 周赛测试 + 超哥对接 + 传齐总资料 + 老王去医美',type:'soon'},
+    {date:'3/28左右',text:'阿超入职4周年/生日，一起吃饭',type:'soon'},
+    {date:'3/30晚',text:'广州请阿超老婆吃漂亮饭',type:'soon'},
+    {date:'4/27',text:'畅经理合同到期处理',type:'future'},
+    {date:'3-4月',text:'全公司裁人挤水分（26→18人）',type:'future'},
+    {date:'5月',text:'四条业务线启动 + 开始重新招人',type:'future'},
+    {date:'5/7',text:'阿超婚礼（老王争取参加）',type:'future'},
+    {date:'5/11前后',text:'老王右手手术',type:'future'},
+    {date:'6-7月',text:'电商直播间筹备（主播招聘+培训）',type:'future'}
+  ],
+  quotes: [
+    {text:'战略定力一定要足，不要受他们影响。你当他们不存在。',label:'— 战略定力'},
+    {text:'三月、四月就是把人挤掉所有的水分。五月份、六月份就开始慢慢再往回涨。',label:'— 裁人节奏'},
+    {text:'签约两百多万，还不如慢慢抬。一个月涨一次1000，顶到一万五、一万八，顶死他们。',label:'— 选手策略'},
+    {text:'劳动法只对底薪负责。绩效是浮动市场浮动，你说没有就没有了，你爱干不干。',label:'— 绩效管理（律师观点）'},
+    {text:'齐总是能把自己情绪运用自如。他对自己可以做到不生气，但别人感觉他很生气。',label:'— 批评人最高境界'},
+    {text:'公司是一条大船，我们在船上的人就是保护好这条船。',label:'— 公司观'},
+    {text:'做创始人要拿全家身家性命去赌，要么上天，要么下地，没有中间值。',label:'— 老板的风险'},
+    {text:'老婆永远是好的，不管你以后出不出轨也好，你老婆永远是最好。',label:'— 家庭观'},
+    {text:'你得让AI干点事情，帮你总结两句会议不行啊。挣最小的钱，种下通向未来的种子。',label:'— AI部门'}
+  ]
+};
+
+var state = JSON.parse(localStorage.getItem('todo-v3') || '{}');
+var filters = {status:'all', owner:'all'};
+
+function saveState() { localStorage.setItem('todo-v3', JSON.stringify(state)); }
+
+function ownerTagClass(o) {
+  var m = {'老王':'tag-lw','凯哥':'tag-kg','阿超':'tag-ac','老王+凯哥':'tag-lw-kg','凯哥+阿超':'tag-kg-ac','老王+阿超':'tag-lw-ac'};
+  return m[o] || 'tag-normal';
+}
+function matchFilter(item) {
+  if (filters.status === 'urgent' && (item.tag !== '紧急' || state[item.id])) return false;
+  if (filters.status === 'pending' && state[item.id]) return false;
+  if (filters.status === 'done' && !state[item.id]) return false;
+  if (filters.owner !== 'all') {
+    if (item.owner === filters.owner) return true;
+    var both = filters.owner.split('+');
+    if (both.length === 2 && item.owner.indexOf(both[0]) >= 0 && item.owner.indexOf(both[1]) >= 0) return true;
+    return false;
+  }
+  return true;
+}
+
+function render() {
+  var total=0, done=0, urgent=0;
+  DATA.sections.forEach(function(s){ s.items.forEach(function(item){
+    total++; if(state[item.id]) done++; if(item.tag==='紧急' && !state[item.id]) urgent++;
+  });});
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-pending').textContent = total - done;
+  document.getElementById('stat-urgent').textContent = urgent;
+  document.getElementById('progress-fill').style.width = (total ? (done/total*100) : 0) + '%';
+
+  var el = document.getElementById('sections');
+  el.innerHTML = '';
+  DATA.sections.forEach(function(section){
+    var filtered = section.items.filter(matchFilter);
+    if (!filtered.length) return;
+    var collapsed = state['c-'+section.id];
+    var pending = filtered.filter(function(i){return !state[i.id];}).length;
+    var d = document.createElement('div');
+    d.className = 'section';
+    var itemsHtml = filtered.map(function(item){
+      return '<div class="todo-item '+(state[item.id]?'done':'')+'">'
+        +'<div class="todo-checkbox '+(state[item.id]?'checked':'')+'" onclick="toggleItem('+item.id+')"></div>'
+        +'<div class="todo-content"><div class="todo-text">'+item.text+'</div>'
+        +'<div class="todo-meta">'
+        +'<span class="todo-tag '+ownerTagClass(item.owner)+'">👤 '+item.owner+'</span>'
+        +(item.tag==='紧急'?'<span class="todo-tag tag-urgent">🔥 紧急</span>':'<span class="todo-tag tag-normal">📋 普通</span>')
+        +(item.date?'<span class="todo-tag tag-date">📅 '+item.date+'</span>':'')
+        +(state[item.id]?'<span class="todo-tag tag-done">✅ 完成</span>':'')
+        +'</div></div>'
+        +'<div class="todo-actions"><button class="todo-btn delete" onclick="deleteItem('+item.id+')" title="删除">✕</button></div>'
+        +'</div>';
+    }).join('');
+    d.innerHTML = '<div class="section-header" onclick="toggleSection(\''+section.id+'\')">'
+      +'<div class="section-title"><div class="section-icon" style="background:'+section.color+'20;color:'+section.color+'">'+section.icon+'</div>'
+      +'<h2>'+section.title+'</h2></div>'
+      +'<div style="display:flex;align-items:center;gap:10px"><span class="section-count">'+pending+'/'+section.items.length+'</span>'
+      +'<span class="section-toggle '+(collapsed?'collapsed':'')+'">▼</span></div></div>'
+      +'<div class="section-body '+(collapsed?'collapsed':'')+'" id="section-'+section.id+'">'+itemsHtml+'</div>';
+    el.appendChild(d);
+  });
+
+  document.getElementById('timeline').innerHTML = '<h2>📅 重要时间节点</h2>'
+    + DATA.timeline.map(function(t){ return '<div class="timeline-item"><div class="timeline-dot '+t.type+'">'+(t.type==='soon'?'⚡':'📌')+'</div>'
+      +'<div class="timeline-info"><div class="timeline-date">'+t.date+'</div><div class="timeline-text">'+t.text+'</div></div></div>'; }).join('');
+
+  document.getElementById('quotes').innerHTML = '<h2>💬 关键原话</h2>'
+    + DATA.quotes.map(function(q){ return '<div class="quote-item"><div class="quote-text">"'+q.text+'"</div><div class="quote-label">'+q.label+'</div></div>'; }).join('');
+}
+
+function toggleItem(id){ state[id]=!state[id]; saveState(); render(); }
+function toggleSection(id){ state['c-'+id]=!state['c-'+id]; saveState(); render(); }
+function deleteItem(id){
+  if(!confirm('确认删除？')) return;
+  DATA.sections.forEach(function(s){ s.items = s.items.filter(function(i){return i.id!==id;}); });
+  delete state[id]; saveState(); render();
+}
+function setFilter(type, val){
+  filters[type] = val;
+  document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if(event && event.target) event.target.classList.add('active');
+  render();
+}
+render();
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-<!-- v2.1: batch edit + task editing -->
+<!-- v2.2: mobile-first redesign -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -189,47 +189,63 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .action-sheet-cancel{display:block;width:100%;padding:16px;text-align:center;font-size:16px;color:#666;background:none;border:none;border-top:8px solid #f0f2f5;cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:52px}
 .action-sheet-cancel:active{background:#f0f2f5}
 @media(max-width:600px){
-  /* Header */
-  .header{padding:20px 16px 16px}
-  .header h1{font-size:18px}
-  .header p{font-size:12px}
-  .header .stat-num{font-size:22px}
+  /* === Header: compact stats === */
+  .header{padding:16px 14px 12px}
+  .header h1{font-size:17px}
+  .header p{font-size:11px;margin-top:2px}
+  .header .stats{gap:0;margin-top:10px;display:flex;justify-content:space-around}
+  .header .stat{min-width:auto;flex:1;text-align:center}
+  .header .stat-num{font-size:20px}
   .header .stat-label{font-size:10px}
-  .header .stats{gap:12px}
-  .identity-bar .sb{padding:6px 12px;font-size:13px;min-height:36px}
-  /* Container */
-  .container{padding:12px 10px 120px}
-  /* Filter bar — horizontal scroll */
-  .filter-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;padding-bottom:4px;gap:6px;scrollbar-width:none;-ms-overflow-style:none}
+  .progress-bar{margin-top:10px;height:3px}
+  .identity-bar{margin-top:10px;padding:6px 12px}
+  .identity-bar .ci{font-size:12px}
+  .identity-bar .sb{padding:5px 10px;font-size:12px}
+  .identity-bar .ss{font-size:10px}
+  /* === Container === */
+  .container{padding:10px 10px 80px}
+  /* === Filter bar: compact summary + scroll === */
+  .filter-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:10px;padding-bottom:2px;gap:6px;scrollbar-width:none;-ms-overflow-style:none}
   .filter-bar::-webkit-scrollbar{display:none}
-  .filter-group{flex-shrink:0}
+  .filter-group{flex-shrink:0;gap:5px}
   .filter-divider{display:none}
-  .filter-btn{padding:8px 14px;font-size:13px;min-height:36px;border-radius:18px}
-  .batch-toggle-btn{flex-shrink:0;padding:8px 14px;font-size:13px;min-height:36px;border-radius:18px}
-  /* Todo items */
-  .todo-item{padding:14px 12px;gap:10px}
+  .filter-group-label{display:none}
+  .filter-btn{padding:6px 12px;font-size:12px;min-height:32px;border-radius:16px}
+  .filter-btn.my-task-btn{font-weight:600}
+  .batch-toggle-btn{flex-shrink:0;padding:6px 12px;font-size:12px;min-height:32px;border-radius:16px}
+  /* === Sections: card style === */
+  .section{margin-bottom:12px}
+  .section-header{padding:12px 14px;border-radius:14px 14px 0 0}
+  .section-icon{width:30px;height:30px;font-size:15px;border-radius:8px}
+  .section-title h2{font-size:14px}
+  .section-body{border-radius:0 0 14px 14px}
+  /* === Todo items: more spacing, card feel === */
+  .todo-item{padding:14px 12px;gap:10px;margin:6px 8px;border-bottom:none;background:rgba(255,255,255,0.7);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .todo-item:last-child{margin-bottom:6px}
+  .todo-item:hover{background:#fff}
   .todo-content{min-width:0}
-  .todo-text{font-size:14px}
-  .todo-meta{gap:5px;margin-top:6px}
-  .todo-tag{font-size:11px;padding:2px 7px}
-  /* Hide desktop action buttons on mobile — use long-press instead */
-  .todo-actions{display:none !important}
-  /* Touch-friendly checkboxes */
+  .todo-text{font-size:14px;line-height:1.6}
+  .todo-meta{gap:4px;margin-top:6px;flex-wrap:wrap}
+  .todo-tag{font-size:10px;padding:2px 6px;border-radius:4px}
+  /* === Show action buttons on mobile === */
+  .todo-actions{display:flex !important}
+  .todo-btn{width:32px;height:32px;font-size:13px}
+  /* === Touch-friendly checkboxes === */
   .todo-checkbox{width:24px;height:24px;min-width:24px;border-radius:6px}
-  .todo-checkbox.checked::after{font-size:14px}
+  .todo-checkbox.checked::after{font-size:13px}
   .batch-checkbox{width:26px;height:26px;min-width:26px}
-  .batch-checkbox.checked::after{font-size:13px}
-  /* Note area */
+  .batch-checkbox.checked::after{font-size:12px}
+  /* === Note area === */
   .todo-note-area{padding:0 12px 12px 36px}
-  .todo-note-area textarea{font-size:16px;min-height:72px}
-  /* Edit panel — bottom sheet style on mobile */
+  .todo-note-area textarea{font-size:16px;min-height:72px;border-radius:10px}
+  /* === Edit panel: bottom sheet === */
   .edit-panel{position:fixed;bottom:0;left:0;right:0;z-index:500;margin:0;border-radius:16px 16px 0 0;border-left:none;padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 20px rgba(0,0,0,0.15);max-height:70vh;overflow-y:auto;animation:slideUp .25s ease}
   .edit-panel input,.edit-panel select{font-size:16px;padding:12px;border-radius:8px;min-height:48px}
   .edit-panel .edit-row{flex-direction:column;gap:0}
   .edit-panel label{font-size:14px;margin-top:14px}
   .edit-panel .edit-save,.edit-panel .edit-cancel{padding:12px 24px;font-size:15px;min-height:44px;border-radius:8px}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  /* Batch mode */
+  /* === Batch mode === */
   .batch-action-bar{position:fixed;bottom:0;left:0;right:0;border-radius:16px 16px 0 0;padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:90;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .batch-action-bar::-webkit-scrollbar{display:none}
   .batch-count{font-size:13px;flex-shrink:0;min-height:36px;display:flex;align-items:center}
@@ -237,9 +253,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   .batch-cancel-btn{padding:8px 14px;font-size:13px;min-height:44px;flex-shrink:0}
   .batch-dropdown{min-width:200px;border-radius:12px}
   .batch-dropdown-item{padding:14px 18px;font-size:15px;min-height:44px}
-  /* Batch date input in dropdown */
   #batch-date-input{font-size:16px;padding:12px;min-height:44px}
-  /* Identity modal */
+  .todo-item.batch-selected{border-left:3px solid #1976d2;background:#fff !important}
+  /* === Identity modal === */
   .modal{padding:24px 20px;max-height:90vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;top:auto;max-width:100%;width:100%}
   .modal h2{font-size:20px}
   .modal p{font-size:14px;margin-bottom:20px}
@@ -248,17 +264,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   .add-identity-btn{padding:14px;font-size:15px;min-height:48px;border-radius:14px}
   .add-identity-form input{font-size:16px;padding:12px;min-height:48px;border-radius:8px}
   .add-identity-form .form-save,.add-identity-form .form-cancel{padding:10px 18px;font-size:14px;min-height:44px}
-  /* Log/timeline items */
+  /* === Other panels === */
+  .timeline,.quotes,.log-panel{padding:14px 12px;border-radius:14px}
   .log-item{padding:10px 0;font-size:13px}
   .quote-text{font-size:13px}
-  /* Section */
-  .section-header{padding:12px 14px}
-  .section-icon{width:28px;height:28px;font-size:14px;border-radius:6px}
-  .section-title h2{font-size:14px}
-  /* Timeline */
-  .timeline,.quotes,.log-panel{padding:16px 14px}
+  .timeline-item{padding:8px 0}
+  .timeline-text{font-size:13px}
+  /* === Action sheet === */
+  .action-sheet-item{min-height:52px;font-size:16px;padding:16px 20px}
+  .action-sheet-cancel{font-size:16px;min-height:52px}
+  /* === Toast === */
+  .toast{font-size:14px;max-width:280px}
 }
-</style>
 </style>
 </head>
 <body>

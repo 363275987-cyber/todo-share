@@ -378,6 +378,8 @@ var logsCollapsed=true;
 var editingItemId=null;
 var batchMode=false;
 var batchSelected={};
+var dismissedIds=JSON.parse(localStorage.getItem('todo-dismissed')||'{}');
+var dismissTimers={};
 
 // Preset colors for custom identities
 var CUSTOM_COLORS=[
@@ -503,7 +505,10 @@ async function loadRemoteState(){
     remoteState={};
     res.data.forEach(function(row){
       remoteState[row.todo_id]=row;
-      if(row.completed){state[row.todo_id]=true;}else{delete state[row.todo_id];}
+      if(row.completed){
+        state[row.todo_id]=true;
+        dismissedIds[row.todo_id]=true; // Already completed → dismiss immediately
+      }else{delete state[row.todo_id];}
       if(row.note){state['note-'+row.todo_id]=row.note;}else{delete state['note-'+row.todo_id];}
       // Apply remote meta (owner/tag/date) — Req 4
       var item=ITEM_MAP[row.todo_id];
@@ -794,6 +799,8 @@ document.addEventListener('click',function(e){
 // ===== Existing helpers =====
 function ownerTagClass(o){return getTagClassForOwner(o);}
 function matchFilter(item){
+  // Dismissed completed tasks: hide unless explicitly viewing 'done'
+  if(dismissedIds[item.id]&&filters.status!=='done')return false;
   if(filters.status==='urgent'&&(item.tag!=='紧急'||state[item.id]))return false;
   if(filters.status==='pending'&&state[item.id])return false;
   if(filters.status==='done'&&!state[item.id])return false;
@@ -992,6 +999,10 @@ async function toggleItem(id){
   var wasDone=!!state[id];
   var newDone=!wasDone;
   if(newDone)state[id]=true;else delete state[id];
+  // Cancel any existing dismiss timer
+  if(dismissTimers[id]){clearTimeout(dismissTimers[id]);delete dismissTimers[id];}
+  // If un-completing, un-dismiss
+  if(!newDone){delete dismissedIds[id];localStorage.setItem('todo-dismissed',JSON.stringify(dismissedIds));}
   saveState();render();
   if(supabaseReady){
     var item=ITEM_MAP[id]||{};
@@ -1004,6 +1015,15 @@ async function toggleItem(id){
     await writeLog(id,newDone?'complete':'uncomplete','');
     showToast(newDone?'已完成 ✓':'已取消','success');
   }else{showToast('离线模式：仅本地保存','info');}
+  // Auto-dismiss completed task after 20 seconds
+  if(newDone){
+    dismissTimers[id]=setTimeout(function(){
+      dismissedIds[id]=true;
+      localStorage.setItem('todo-dismissed',JSON.stringify(dismissedIds));
+      delete dismissTimers[id];
+      render();
+    },20000);
+  }
 }
 
 function toggleSection(id){state['c-'+id]=!state['c-'+id];saveState();render();}

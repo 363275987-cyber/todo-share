@@ -89,6 +89,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .timeline-date{font-size:12px;color:#999;font-weight:500}
 .timeline-text{font-size:14px;margin-top:2px}
 .quotes{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:20px 16px;margin-bottom:24px}
+.quotes-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.quotes-header h2{margin-bottom:0;cursor:pointer}
+.quotes-header .quotes-toggle{font-size:14px;color:#999;transition:transform .3s}
+.quotes-header .quotes-toggle.collapsed{transform:rotate(-90deg)}
+.quotes-body{margin-top:16px}
+.quotes-body.collapsed{display:none}
 .quote-item{padding:12px 0;border-bottom:1px solid #f0f2f5}
 .quote-item:last-child{border-bottom:none}
 .quote-text{font-size:13px;color:#555;font-style:italic;line-height:1.6;padding-left:12px;border-left:3px solid #2ecc71}
@@ -128,7 +134,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </style>
 </head>
 <body>
-<div class="modal-overlay hidden" id="identity-modal"><div class="modal"><h2>👋 你是谁？</h2><p>选择你的身份，协同编辑待办事项</p><div class="identity-options">
+<div class="modal-overlay hidden" id="identity-modal" onclick="if(event.target===this){}"><div class="modal"><h2>👋 你是谁？</h2><p>选择你的身份，协同编辑待办事项</p><div class="identity-options">
 <div class="identity-opt" onclick="selectIdentity('老王')"><span class="oe">🟣</span><div class="oi"><div class="on">老王</div><div class="od">创始人 / 决策者</div></div></div>
 <div class="identity-opt" onclick="selectIdentity('凯哥')"><span class="oe">🟠</span><div class="oi"><div class="on">凯哥</div><div class="od">总经理 / 执行层</div></div></div>
 <div class="identity-opt" onclick="selectIdentity('阿超')"><span class="oe">🟢</span><div class="oi"><div class="on">阿超</div><div class="od">运营 / 教练 / 主播</div></div></div>
@@ -367,7 +373,7 @@ function render(){
       var noteHtml='<div class="todo-note-area'+(noteOpen?' open':'')+'" id="note-area-'+item.id+'">'
         +'<textarea placeholder="添加备注..." onblur="onBlurNote('+item.id+')">'+escHtml(noteText)+'</textarea>'
         +'<div class="note-hint">失焦自动保存</div></div>';
-      return '<div class="todo-item '+(isDone?'done':'')+'" onclick="toggleNote('+item.id+')" data-id="'+item.id+'">'
+      return '<div class="todo-item '+(isDone?'done':'')+'" data-id="'+item.id+'">'
         +'<div class="todo-checkbox '+(isDone?'checked':'')+'" onclick="event.stopPropagation();toggleItem('+item.id+')" title="'+(isDone?'标记为未完成':'标记为完成')+'"></div>'
         +'<div class="todo-content"><div class="todo-text">'+escHtml(item.text)+'</div>'
         +'<div class="todo-meta">'
@@ -397,8 +403,9 @@ function render(){
     +DATA.timeline.map(function(t){return '<div class="timeline-item"><div class="timeline-dot '+t.type+'">'+(t.type==='soon'?'⚡':'📌')+'</div>'
       +'<div class="timeline-info"><div class="timeline-date">'+t.date+'</div><div class="timeline-text">'+t.text+'</div></div></div>';}).join('');
 
-  document.getElementById('quotes').innerHTML='<h2>💬 关键原话</h2>'
-    +DATA.quotes.map(function(q){return '<div class="quote-item"><div class="quote-text">"'+escHtml(q.text)+'"</div><div class="quote-label">'+q.label+'</div></div>';}).join('');
+  document.getElementById('quotes').innerHTML='<div class="quotes-header" onclick="toggleQuotes()"><h2>💬 关键原话</h2><span class="quotes-toggle collapsed" id="quotes-toggle">▼</span></div>'
+    +'<div class="quotes-body collapsed" id="quotes-body">'
+    +DATA.quotes.map(function(q){return '<div class="quote-item"><div class="quote-text">"'+escHtml(q.text)+'"</div><div class="quote-label">'+q.label+'</div></div>';}).join('')+'</div>';
 }
 
 async function toggleItem(id){
@@ -441,6 +448,12 @@ function toggleLogPanel(){
   document.getElementById('log-body').classList.toggle('collapsed',logsCollapsed);
   document.getElementById('log-toggle').classList.toggle('collapsed',logsCollapsed);
   if(!logsCollapsed)loadLogs();
+}
+function toggleQuotes(){
+  var body=document.getElementById('quotes-body');
+  var toggle=document.getElementById('quotes-toggle');
+  body.classList.toggle('collapsed');
+  toggle.classList.toggle('collapsed');
 }
 
 // Init

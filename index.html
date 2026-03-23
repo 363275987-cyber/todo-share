@@ -35,7 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .filter-btn:hover{border-color:#1a1a2e}
 .filter-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
 .filter-divider{width:1px;background:#ddd;margin:0 6px;align-self:stretch}
-.batch-toggle-btn{padding:6px 14px;border:1px solid #e8e8e8;background:#fff;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:auto;display:flex;align-items:center;gap:4px}
+.batch-toggle-btn{padding:6px 14px;border:1px solid #e8e8e8;background:#fff;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:4px}
 .batch-toggle-btn:hover{border-color:#1976d2;color:#1976d2}
 .batch-toggle-btn.active{background:#1976d2;color:#fff;border-color:#1976d2}
 .batch-action-bar{display:none;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:12px;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
@@ -204,15 +204,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   .identity-bar .ss{font-size:10px}
   /* === Container === */
   .container{padding:10px 10px 80px}
-  /* === Filter bar: compact summary + scroll === */
-  .filter-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:10px;padding-bottom:2px;gap:6px;scrollbar-width:none;-ms-overflow-style:none}
+  /* === Filter bar: two rows on mobile === */
+  .filter-bar{flex-wrap:wrap;overflow:visible;margin-bottom:10px;gap:6px 8px;row-gap:8px}
   .filter-bar::-webkit-scrollbar{display:none}
-  .filter-group{flex-shrink:0;gap:5px}
+  .filter-group{flex-wrap:wrap;gap:5px;flex:1;min-width:0}
   .filter-divider{display:none}
   .filter-group-label{display:none}
-  .filter-btn{padding:6px 12px;font-size:12px;min-height:32px;border-radius:16px}
+  .filter-btn{padding:6px 12px;font-size:12px;min-height:30px;border-radius:16px}
   .filter-btn.my-task-btn{font-weight:600}
-  .batch-toggle-btn{flex-shrink:0;padding:6px 12px;font-size:12px;min-height:32px;border-radius:16px}
+  .batch-toggle-btn{flex-shrink:0;padding:6px 12px;font-size:12px;min-height:30px;border-radius:16px;order:-1;margin-right:2px}
   /* === Sections: card style === */
   .section{margin-bottom:12px}
   .section-header{padding:12px 14px;border-radius:14px 14px 0 0}
@@ -246,7 +246,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   .edit-panel .edit-save,.edit-panel .edit-cancel{padding:12px 24px;font-size:15px;min-height:44px;border-radius:8px}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
   /* === Batch mode === */
-  .batch-action-bar{position:fixed;bottom:0;left:0;right:0;border-radius:16px 16px 0 0;padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:90;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .batch-mode .todo-item{padding-left:10px}
+  .batch-checkbox{width:22px;height:22px;min-width:22px;border-radius:50%;border:2px solid #ccc}
+  .batch-checkbox:hover{border-color:#1976d2;background:rgba(25,118,210,0.05)}
+  .batch-checkbox.checked::after{font-size:12px}
+  .todo-item.batch-selected{border-left:3px solid #1976d2;background:#f5f8ff !important;border-radius:10px}
+  .batch-action-bar{position:fixed;bottom:0;left:0;right:0;border-radius:16px 16px 0 0;padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:90;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;box-shadow:0 -2px 16px rgba(0,0,0,0.12)}
   .batch-action-bar::-webkit-scrollbar{display:none}
   .batch-count{font-size:13px;flex-shrink:0;min-height:36px;display:flex;align-items:center}
   .batch-action-btn{padding:8px 14px;font-size:13px;min-height:44px;border-radius:8px;flex-shrink:0}
@@ -254,7 +259,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
   .batch-dropdown{min-width:200px;border-radius:12px}
   .batch-dropdown-item{padding:14px 18px;font-size:15px;min-height:44px}
   #batch-date-input{font-size:16px;padding:12px;min-height:44px}
-  .todo-item.batch-selected{border-left:3px solid #1976d2;background:#fff !important}
   /* === Identity modal === */
   .modal{padding:24px 20px;max-height:90vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;top:auto;max-width:100%;width:100%}
   .modal h2{font-size:20px}
@@ -313,6 +317,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 </div></div>
 <div class="container">
 <div class="filter-bar">
+<button class="batch-toggle-btn" id="batch-toggle-btn" onclick="toggleBatchMode()"><span class="batch-icon">☐</span> 多选</button>
 <div class="filter-group"><span class="filter-group-label">状态:</span>
 <button class="filter-btn active" onclick="setFilter('status','all')">全部</button>
 <button class="filter-btn" onclick="setFilter('status','urgent')">🔥紧急</button>
@@ -320,7 +325,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <button class="filter-btn" onclick="setFilter('status','done')">✅已完成</button></div>
 <div class="filter-divider"></div>
 <div class="filter-group" id="owner-filter-group"><span class="filter-group-label">执行人:</span></div>
-<button class="batch-toggle-btn" id="batch-toggle-btn" onclick="toggleBatchMode()"><span class="batch-icon">☐</span> 多选</button>
 </div>
 <div class="batch-action-bar" id="batch-action-bar">
 <span class="batch-count" id="batch-count">已选 0 项</span>

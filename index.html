@@ -302,13 +302,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <button class="filter-btn" onclick="setFilter('status','pending')">⏳进行中</button>
 <button class="filter-btn" onclick="setFilter('status','done')">✅已完成</button></div>
 <div class="filter-divider"></div>
-<div class="filter-group"><span class="filter-group-label">执行人:</span>
-<button class="filter-btn active" onclick="setFilter('owner','all')">全部</button>
-<button class="filter-btn" onclick="setFilter('owner','老王')">🟣 老王</button>
-<button class="filter-btn" onclick="setFilter('owner','凯哥')">🟠 凯哥</button>
-<button class="filter-btn" onclick="setFilter('owner','阿超')">🟢 阿超</button>
-<button class="filter-btn" onclick="setFilter('owner','老王+凯哥')">🟣🟠 老王&凯哥</button>
-<button class="filter-btn" onclick="setFilter('owner','凯哥+阿超')">🟠🟢 凯哥&阿超</button></div>
+<div class="filter-group" id="owner-filter-group"><span class="filter-group-label">执行人:</span></div>
 <button class="batch-toggle-btn" id="batch-toggle-btn" onclick="toggleBatchMode()"><span class="batch-icon">☐</span> 多选</button>
 </div>
 <div class="batch-action-bar" id="batch-action-bar">
@@ -339,6 +333,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <div class="log-panel"><div class="log-panel-header" onclick="toggleLogPanel()">
 <h2>📋 操作记录</h2><span class="log-toggle collapsed" id="log-toggle">▼</span></div>
 <div class="log-body collapsed" id="log-body"><div class="log-empty" id="log-empty">暂无操作记录</div><div id="log-list"></div></div></div>
+</div>
+<!-- Mobile action sheet for long-press context menu -->
+<div class="action-sheet-overlay" id="action-sheet-overlay"></div>
+<div class="action-sheet" id="action-sheet">
+  <div class="action-sheet-handle"></div>
+  <div class="action-sheet-title" id="action-sheet-title">任务操作</div>
+  <div class="action-sheet-item" id="as-edit" onclick="actionSheetEdit()"><span class="asi-icon">✏️</span><span class="asi-label">编辑任务</span></div>
+  <div class="action-sheet-item" id="as-note" onclick="actionSheetNote()"><span class="asi-icon">📝</span><span class="asi-label">添加备注</span></div>
+  <div class="action-sheet-item danger" id="as-delete" onclick="actionSheetDelete()"><span class="asi-icon">🗑️</span><span class="asi-label">删除任务</span></div>
+  <button class="action-sheet-cancel" onclick="closeActionSheet()">取消</button>
 </div>
 <script>
 var DATA={sections:[{id:'hr',title:'👤 人事与管理',icon:'👥',color:'#3498db',items:[{id:1,text:'发布党超副总经理任命函至全体员工群，明确管理权限（一票否决权、罚款权）',owner:'凯哥',tag:'紧急',date:'3/24'},{id:2,text:'找律师咨询：①绩效工资合规性 ②合同改晚班的可行性',owner:'凯哥',tag:'紧急',date:'3/24'},{id:3,text:'跟畅经理谈话 — 明确受党总/袁总管理，4月27日合同到期必须处理',owner:'阿超',tag:'紧急',date:'4/27前'},{id:4,text:'剪辑部三人全部上绩效考核压力 — 王鹏留下，小鱼和阿辉月底淘汰不达标者',owner:'阿超',tag:'普通',date:''},{id:5,text:'阿辉作品只剪到月底，之后不再使用',owner:'阿超',tag:'普通',date:'3/31'},{id:6,text:'俊贤工作拉满 + 绩效对齐 — 产出不够只发底薪（1万）',owner:'阿超',tag:'普通',date:''},{id:7,text:'要求剪辑部改晚班（下午4点-凌晨2点）— 律师确认后推行',owner:'阿超',tag:'普通',date:''},{id:8,text:'管教练和王教练每天必须往群里发作业 — 雅丽监督，一天不发绩效清零',owner:'阿超',tag:'普通',date:''},{id:9,text:'3-4月全公司裁人挤水分（26人→18人）',owner:'凯哥+阿超',tag:'普通',date:'3-4月'},{id:42,text:'统计本月每个教练上课数，月底前出排名，绩效差的直接谈话（雅丽执行统计）',owner:'阿超',tag:'普通',date:'月底前'}]},{id:'host',title:'🎙️ 主播与教练',icon:'🎤',color:'#e67e22',items:[{id:10,text:'陈恳奶奶身体不好，下月可能请长假 — 邱教练提前顶上',owner:'阿超',tag:'普通',date:''},{id:11,text:'温建林3/22-3/26休息 — 阿超主动顶抖音岗',owner:'阿超',tag:'普通',date:'3/22-26'},{id:12,text:'邱教练试水主播岗，先给200元 — 表现好再给400',owner:'阿超',tag:'普通',date:''},{id:13,text:'阿超主播岗600元起步（vs 教练400）— 不能让教练知道差距',owner:'凯哥',tag:'普通',date:''},{id:14,text:'阿超封闭训练7天做主播备份（保险丝）',owner:'阿超',tag:'普通',date:''},{id:15,text:'陈恳和邱教练不再培养为主播 — 安全风险考虑，暂不外招',owner:'凯哥',tag:'普通',date:''},{id:16,text:'面试主播结果必须先跟凯哥汇报 — 不得私自决定',owner:'阿超',tag:'普通',date:''}]},{id:'player',title:'🎱 选手策略',icon:'🎯',color:'#e74c3c',items:[{id:17,text:'不签200万长约，改每月涨薪锁定严敏涛+李宝宝（涨1000-2000/月）',owner:'凯哥',tag:'紧急',date:''},{id:18,text:'测试周赛模式（3+1+3）— 中间一天给其他家抬价',owner:'老王',tag:'紧急',date:'3/24起'},{id:19,text:'确认周栋效果 — 已从5000涨到10000，作为第三个选手名额',owner:'阿超',tag:'普通',date:''},{id:20,text:'跟超哥对接拿货 — 建立商业关系，暂不提选手',owner:'老王',tag:'普通',date:'3/24'},{id:21,text:'关注苏丹红对严敏涛/李宝宝的邀约反应 — 及时跟进',owner:'阿超',tag:'普通',date:''},{id:43,text:'联系赵金童经纪人，看5月能否安排一场表演赛',owner:'阿超',tag:'普通',date:'5月'}]},{id:'biz',title:'💼 业务线（5月启动）',icon:'🚀',color:'#9b59b6',items:[{id:22,text:'全国首家无烟台球预约制俱乐部 — 团购68元/小时，TV台88元',owner:'凯哥',tag:'普通',date:'5月'},{id:23,text:'全国青少年台球俱乐部 — 周末儿童日套餐 + 公益体验课',owner:'凯哥',tag:'普通',date:'5月'},{id:24,text:'线下私教课 + 传奇班 — 6000-7000元/月，单节500元',owner:'凯哥',tag:'普通',date:'5月'},{id:25,text:'皮尔力直播间（球杆专场）',owner:'凯哥',tag:'普通',date:'5-6月'},{id:26,text:'通类直播间（全品类配件）— 抄三号台球模式',owner:'凯哥+阿超',tag:'普通',date:'5-6月'},{id:27,text:'自有品牌经销 — KO、PK、巧克、巴宝莉，直播间+经销双渠道',owner:'凯哥',tag:'普通',date:'5-6月'},{id:28,text:'直播投流设置 — ROI设好自动跑',owner:'阿超',tag:'普通',date:'5-6月'},{id:29,text:'主播话术培训筹备 — 有吴占良作业可抄',owner:'阿超',tag:'普通',date:'5-6月'},{id:30,text:'跟赵金童师傅洽谈公益合作 — 短期活动，蹭赵青铜夺冠红利',owner:'老王',tag:'普通',date:''}]},{id:'finance',title:'💰 库存与财务',icon:'📊',color:'#2ecc71',items:[{id:31,text:'500-600张球杆库存消化 — 价值500-600万，核心资产包袱',owner:'老王+凯哥',tag:'紧急',date:''},{id:32,text:'公司欠薪约150-200万 — 持续关注现金流',owner:'凯哥',tag:'紧急',date:''}]},{id:'ai',title:'🤖 AI部门',icon:'💡',color:'#1abc9c',items:[{id:33,text:'1-2个月内成立AI相关部门 — 用AI解决痛点、创造最小商业闭环',owner:'老王',tag:'普通',date:''},{id:34,text:'批量制作AI台球启蒙绘本 — 已给小石头做了一套，有先发优势可卖',owner:'老王',tag:'普通',date:''}]},{id:'training',title:'📚 培训与案例',icon:'🎓',color:'#34495e',items:[{id:35,text:'明天把齐总批评人框架/资料传给阿超 — 凯哥承诺',owner:'凯哥',tag:'紧急',date:'3/24'},{id:36,text:'阿超每天录几个版本的批评录音 — 标记最佳示范案例，共同学习',owner:'阿超',tag:'普通',date:''},{id:37,text:'推荐阿超看《太平年》电视剧 — 五代十国题材，管理权力交接启发',owner:'老王',tag:'普通',date:''}]},{id:'family',title:'🏠 家庭',icon:'❤️',color:'#e91e63',items:[{id:38,text:'3/30晚 广州请阿超老婆吃漂亮饭 — 公司感谢仪式',owner:'凯哥',tag:'普通',date:'3/30'},{id:39,text:'4月中下旬正式宴请阿超老婆 — 徐记或高档餐厅',owner:'凯哥',tag:'普通',date:'4月中下旬'},{id:40,text:'每周至少陪老婆吃一次饭 — 中午去她公司也行，态度要对',owner:'阿超',tag:'普通',date:''},{id:41,text:'给女儿的学生手机完成设置 — 控制APP、微信、视频号、QQ',owner:'老王',tag:'普通',date:''},{id:44,text:'下周五请阿超老婆吃饭，订徐记包间',owner:'老王',tag:'普通',date:'3/28'}]}],timeline:[{date:'3/24（明天）',text:'任命函发布 + 律师咨询 + 周赛测试 + 超哥对接 + 传齐总资料 + 老王去医美',type:'soon'},{date:'3/28左右',text:'阿超入职4周年/生日，一起吃饭',type:'soon'},{date:'3/30晚',text:'广州请阿超老婆吃漂亮饭',type:'soon'},{date:'4/27',text:'畅经理合同到期处理',type:'future'},{date:'3-4月',text:'全公司裁人挤水分（26→18人）',type:'future'},{date:'5月',text:'四条业务线启动 + 开始重新招人',type:'future'},{date:'5/7',text:'阿超婚礼（老王争取参加）',type:'future'},{date:'5/11前后',text:'老王右手手术',type:'future'},{date:'6-7月',text:'电商直播间筹备（主播招聘+培训）',type:'future'}],quotes:[{text:'战略定力一定要足，不要受他们影响。你当他们不存在。',label:'— 战略定力'},{text:'三月、四月就是把人挤掉所有的水分。五月份、六月份就开始慢慢再往回涨。',label:'— 裁人节奏'},{text:'签约两百多万，还不如慢慢抬。一个月涨一次1000，顶到一万五、一万八，顶死他们。',label:'— 选手策略'},{text:'劳动法只对底薪负责。绩效是浮动市场浮动，你说没有就没有了，你爱干不干。',label:'— 绩效管理（律师观点）'},{text:'齐总是能把自己情绪运用自如。他对自己可以做到不生气，但别人感觉他很生气。',label:'— 批评人最高境界'},{text:'公司是一条大船，我们在船上的人就是保护好这条船。',label:'— 公司观'},{text:'做创始人要拿全家身家性命去赌，要么上天，要么下地，没有中间值。',label:'— 老板的风险'},{text:'老婆永远是好的，不管你以后出不出轨也好，你老婆永远是最好。',label:'— 家庭观'},{text:'你得让AI干点事情，帮你总结两句会议不行啊。挣最小的钱，种下通向未来的种子。',label:'— AI部门'}]};
@@ -449,6 +453,7 @@ function selectIdentity(name){
   currentIdentity=name;localStorage.setItem('todo-identity',name);
   document.getElementById('identity-modal').classList.add('hidden');
   document.getElementById('identity-display').textContent='当前身份：'+name;
+  renderOwnerFilters();
   showToast('已切换为 '+name,'success');
 }
 function initIdentity(){
@@ -771,11 +776,14 @@ function matchFilter(item){
   if(filters.status==='urgent'&&(item.tag!=='紧急'||state[item.id]))return false;
   if(filters.status==='pending'&&state[item.id])return false;
   if(filters.status==='done'&&!state[item.id])return false;
-  if(filters.owner!=='all'){
+  if(filters.owner!=='all'&&filters.owner!=='__me__'){
     if(item.owner===filters.owner)return true;
     var both=filters.owner.split('+');
     if(both.length===2&&item.owner.indexOf(both[0])>=0&&item.owner.indexOf(both[1])>=0)return true;
     return false;
+  }
+  if(filters.owner==='__me__'&&currentIdentity&&currentIdentity!=='旁观者'){
+    return item.owner===currentIdentity||item.owner.indexOf(currentIdentity)>=0;
   }
   return true;
 }
@@ -786,6 +794,45 @@ function formatCompletedBy(todoId){
   var ts=padZ(d.getHours())+':'+padZ(d.getMinutes());
   var ds=(d.getMonth()+1)+'/'+d.getDate();
   return '<span class="completed-by-tag" title="'+escHtml(r.completed_by)+' 于 '+ds+' '+ts+' 完成">✓ '+escHtml(r.completed_by)+' '+ts+'</span>';
+}
+
+// ===== Owner Filter (Dynamic) =====
+function renderOwnerFilters(){
+  var group=document.getElementById('owner-filter-group');
+  if(!group)return;
+  var owners=getAllOwners();
+  var combos=['老王+凯哥','凯哥+阿超','老王+阿超'];
+  // "全部" button
+  var html='<button class="filter-btn'+(filters.owner==='all'?' active':'')+'" onclick="setOwnerFilter(\'all\')">全部</button>';
+  // "我的任务" button — filters by current identity
+  if(currentIdentity&&currentIdentity!=='旁观者'){
+    html+='<button class="filter-btn my-task-btn'+(filters.owner==='__me__'?' active':'')+'" onclick="setOwnerFilter(\'__me__\')">👤 我的任务</button>';
+  }
+  // Individual owner buttons
+  var tagColors={'老王':'🟣','凯哥':'🟠','阿超':'🟢'};
+  owners.forEach(function(o){
+    var emoji=tagColors[o]||'';
+    if(!emoji){
+      var customs=getCustomIdentities();
+      for(var i=0;i<customs.length;i++){if(customs[i].name===o){emoji=customs[i].emoji;break;}}
+    }
+    html+='<button class="filter-btn'+(filters.owner===o?' active':'')+'" onclick="setOwnerFilter(&#39;'+escHtml(o)+'&#39;)">'+emoji+' '+escHtml(o)+'</button>';
+  });
+  // Combo buttons
+  combos.forEach(function(c){
+    html+='<button class="filter-btn'+(filters.owner===c?' active':'')+'" onclick="setOwnerFilter(&#39;'+escHtml(c)+'&#39;)">'+escHtml(c.replace(/\+/g,'&'))+'</button>';
+  });
+  group.innerHTML='<span class="filter-group-label">执行人:</span>'+html;
+  // Re-apply my-task-btn special style
+  var myBtn=group.querySelector('.my-task-btn');
+  if(myBtn)myBtn.style.cssText='background:'+('#1976d2')+';color:#fff;border-color:#1976d2;font-weight:600';
+  if(myBtn&&filters.owner!=='__me__')myBtn.style.cssText='';
+}
+
+function setOwnerFilter(val){
+  filters.owner=val;
+  render();
+  renderOwnerFilters();
 }
 
 // ===== Render =====
@@ -859,6 +906,64 @@ function render(){
   document.getElementById('quotes').innerHTML='<div class="quotes-header" onclick="toggleQuotes()"><h2>💬 关键原话</h2><span class="quotes-toggle collapsed" id="quotes-toggle">▼</span></div>'
     +'<div class="quotes-body collapsed" id="quotes-body">'
     +DATA.quotes.map(function(q){return '<div class="quote-item"><div class="quote-text">"'+escHtml(q.text)+'"</div><div class="quote-label">'+q.label+'</div></div>';}).join('')+'</div>';
+  // Bind long-press on mobile for todo items
+  bindLongPress();
+  // Render dynamic owner filters
+  renderOwnerFilters();
+}
+
+// ===== Mobile Action Sheet (Long-press context menu) =====
+var actionSheetItemId=null;
+var longPressTimer=null;
+
+function bindLongPress(){
+  var items=document.querySelectorAll('.todo-item');
+  items.forEach(function(el){
+    var id=parseInt(el.getAttribute('data-id'));
+    if(isNaN(id))return;
+    el.addEventListener('touchstart',function(e){
+      var target=e.target;
+      // Don't trigger on checkboxes or buttons
+      if(target.closest('.todo-checkbox')||target.closest('.batch-checkbox')||target.closest('.todo-btn')||target.closest('.edit-panel'))return;
+      longPressTimer=setTimeout(function(){
+        e.preventDefault();
+        showActionSheet(id);
+      },500);
+    },{passive:false});
+    el.addEventListener('touchend',function(){clearTimeout(longPressTimer);});
+    el.addEventListener('touchmove',function(){clearTimeout(longPressTimer);});
+    el.addEventListener('touchcancel',function(){clearTimeout(longPressTimer);});
+  });
+}
+
+function showActionSheet(todoId){
+  if(!todoId)return;
+  actionSheetItemId=todoId;
+  var item=ITEM_MAP[todoId];
+  var title=item?item.text.substring(0,30)+(item.text.length>30?'…':''):'任务';
+  document.getElementById('action-sheet-title').textContent=title;
+  document.getElementById('action-sheet-overlay').classList.add('show');
+  document.getElementById('action-sheet').classList.add('show');
+  // Haptic feedback if available
+  if(navigator.vibrate)navigator.vibrate(10);
+}
+function closeActionSheet(){
+  document.getElementById('action-sheet-overlay').classList.remove('show');
+  document.getElementById('action-sheet').classList.remove('show');
+  actionSheetItemId=null;
+}
+document.getElementById('action-sheet-overlay').addEventListener('click',closeActionSheet);
+function actionSheetEdit(){
+  var id=actionSheetItemId;closeActionSheet();
+  if(id!==null)openEditPanel(id);
+}
+function actionSheetNote(){
+  var id=actionSheetItemId;closeActionSheet();
+  if(id!==null)toggleNote(id);
+}
+function actionSheetDelete(){
+  var id=actionSheetItemId;closeActionSheet();
+  if(id!==null)deleteItem(id);
 }
 
 async function toggleItem(id){
@@ -891,6 +996,7 @@ function setFilter(type,val){
   filters[type]=val;
   document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
   if(event&&event.target)event.target.classList.add('active');
+  if(type==='owner')renderOwnerFilters();
   render();
 }
 function toggleLogPanel(){

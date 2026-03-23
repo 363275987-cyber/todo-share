@@ -1,4 +1,4 @@
-<!-- v2: Supabase real-time sync -->
+<!-- v2.1: batch edit + task editing -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -28,13 +28,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .identity-bar .sb:hover{background:rgba(255,255,255,0.2)}
 @keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
 .container{max-width:860px;margin:0 auto;padding:20px 16px 80px}
-.filter-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.filter-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
 .filter-group{display:flex;gap:6px;align-items:center}
 .filter-group-label{font-size:12px;color:#999;margin-right:4px}
 .filter-btn{padding:6px 14px;border:1px solid #e8e8e8;background:#fff;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap}
 .filter-btn:hover{border-color:#1a1a2e}
 .filter-btn.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
 .filter-divider{width:1px;background:#ddd;margin:0 6px;align-self:stretch}
+.batch-toggle-btn{padding:6px 14px;border:1px solid #e8e8e8;background:#fff;border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:auto;display:flex;align-items:center;gap:4px}
+.batch-toggle-btn:hover{border-color:#1976d2;color:#1976d2}
+.batch-toggle-btn.active{background:#1976d2;color:#fff;border-color:#1976d2}
+.batch-action-bar{display:none;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:12px;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.batch-action-bar.show{display:flex}
+.batch-count{font-size:13px;font-weight:600;margin-right:8px;white-space:nowrap}
+.batch-action-btn{padding:5px 12px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.batch-action-btn:hover{background:rgba(255,255,255,0.15)}
+.batch-cancel-btn{padding:5px 12px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:rgba(255,255,255,0.7);border-radius:6px;font-size:12px;cursor:pointer;margin-left:auto;transition:all .2s}
+.batch-cancel-btn:hover{background:rgba(255,100,100,0.3);border-color:rgba(255,100,100,0.5);color:#fff}
+.batch-dd-wrap{position:relative;display:inline-block}
+.batch-dropdown{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.2);min-width:160px;z-index:200;overflow:hidden;display:none}
+.batch-dropdown.show{display:block}
+.batch-dropdown-item{padding:10px 14px;font-size:13px;cursor:pointer;color:#333;transition:background .15s}
+.batch-dropdown-item:hover{background:#f0f4ff}
 .section{margin-bottom:24px}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-radius:12px 12px 0 0;border:1px solid #e8e8e8;border-bottom:none;cursor:pointer;user-select:none}
 .section-header:hover{background:#fafafa}
@@ -51,12 +66,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .todo-item:hover{background:#fafbfc}
 .todo-item.done{opacity:.45}
 .todo-item.done .todo-text{text-decoration:line-through;color:#bbb}
+.todo-item.batch-selected{background:#e8f0fe !important}
+.batch-checkbox{width:20px;height:20px;border-radius:50%;border:2px solid #bbb;cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .2s;display:none;align-items:center;justify-content:center}
+.batch-mode .batch-checkbox{display:flex}
+.batch-checkbox:hover{border-color:#1976d2}
+.batch-checkbox.checked{background:#1976d2;border-color:#1976d2}
+.batch-checkbox.checked::after{content:'\2713';color:#fff;font-size:11px;font-weight:700}
 .todo-checkbox{width:20px;height:20px;border-radius:6px;border:2px solid #ddd;cursor:pointer;flex-shrink:0;margin-top:1px;transition:all .2s;display:flex;align-items:center;justify-content:center}
 .todo-checkbox:hover{border-color:#2ecc71}
 .todo-checkbox.checked{background:#2ecc71;border-color:#2ecc71}
 .todo-checkbox.checked::after{content:'\2713';color:#fff;font-size:12px;font-weight:700}
 .todo-content{flex:1;min-width:0}
-.todo-text{font-size:14px;line-height:1.5}
+.todo-text{font-size:14px;line-height:1.5;cursor:pointer;border-radius:3px;padding:0 2px;margin:-2px 0;transition:background .15s}
+.todo-text:hover{background:rgba(0,0,0,0.04)}
 .todo-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center}
 .todo-tag{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500}
 .tag-urgent{background:#fde8e8;color:#e74c3c}
@@ -78,6 +100,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .todo-note-area .note-hint{font-size:11px;color:#bbb;margin-top:4px}
 .note-toggle-btn{font-size:11px;color:#999;cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:4px}
 .note-toggle-btn:hover{background:#f0f2f5;color:#666}
+.edit-panel{display:none;background:#fff;border-left:3px solid #1976d2;padding:12px 16px;margin:0 16px 4px 48px;border-radius:0 8px 8px 0;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.edit-panel.open{display:block}
+.edit-panel label{font-size:12px;color:#666;display:block;margin-bottom:4px;margin-top:10px}
+.edit-panel label:first-child{margin-top:0}
+.edit-panel input,.edit-panel select{width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}
+.edit-panel input:focus,.edit-panel select:focus{border-color:#1976d2}
+.edit-panel .edit-row{display:flex;gap:10px;align-items:flex-end}
+.edit-panel .edit-row>div{flex:1}
+.edit-panel .edit-actions{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.edit-panel .edit-save{padding:6px 18px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;transition:background .2s}
+.edit-panel .edit-save:hover{background:#1565c0}
+.edit-panel .edit-cancel{padding:6px 18px;background:#f5f5f5;color:#666;border:none;border-radius:6px;font-size:13px;cursor:pointer;transition:background .2s}
+.edit-panel .edit-cancel:hover{background:#eee}
 .timeline{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:20px 16px;margin-bottom:24px}
 .timeline h2,.quotes h2,.log-panel h2{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .timeline-item{display:flex;gap:16px;padding:10px 0;position:relative}
@@ -114,7 +149,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .log-empty{color:#ccc;font-size:13px;text-align:center;padding:20px 0}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center}
 .modal-overlay.hidden{display:none}
-.modal{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.modal{background:#fff;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:85vh;overflow-y:auto}
 .modal h2{font-size:18px;font-weight:700;margin-bottom:8px;text-align:center}
 .modal p{font-size:13px;color:#999;text-align:center;margin-bottom:24px}
 .modal .identity-options{display:flex;flex-direction:column;gap:10px}
@@ -124,22 +159,126 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .modal .identity-opt .oi{flex:1}
 .modal .identity-opt .on{font-weight:600}
 .modal .identity-opt .od{font-size:11px;color:#999}
+.modal .add-identity-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 16px;border:2px dashed #ddd;border-radius:12px;cursor:pointer;transition:all .2s;font-size:14px;color:#999;margin-top:4px}
+.modal .add-identity-btn:hover{border-color:#1976d2;color:#1976d2;background:#f0f4ff}
+.add-identity-form{display:none;padding:12px 14px;border:2px solid #1976d2;border-radius:12px;margin-top:4px;background:#f8faff}
+.add-identity-form.open{display:block}
+.add-identity-form input{width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none;margin-bottom:8px}
+.add-identity-form input:focus{border-color:#1976d2}
+.add-identity-form .form-actions{display:flex;gap:8px;justify-content:flex-end}
+.add-identity-form .form-save{padding:6px 14px;background:#1976d2;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+.add-identity-form .form-cancel{padding:6px 14px;background:#f5f5f5;color:#666;border:none;border-radius:6px;font-size:12px;cursor:pointer}
 .toast-container{position:fixed;top:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px}
 .toast{padding:12px 20px;border-radius:10px;font-size:13px;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.15);animation:tin .3s ease;max-width:320px}
 .toast.success{background:#2ecc71}.toast.error{background:#e74c3c}.toast.info{background:#3498db}
 .toast.fade-out{animation:tout .3s ease forwards}
 @keyframes tin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tout{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
-@media(max-width:600px){.header{padding:24px 16px 20px}.header h1{font-size:18px}.header .stat-num{font-size:22px}.container{padding:16px 12px 60px}.todo-item{padding:12px}.todo-actions{display:none}.filter-bar{gap:6px}.filter-btn{padding:5px 10px;font-size:12px}.todo-note-area{padding-left:36px}}
+/* Mobile action sheet (long-press context menu) */
+.action-sheet-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1500;display:none}
+.action-sheet-overlay.show{display:block}
+.action-sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;padding:8px 0 env(safe-area-inset-bottom,16px);z-index:1501;transform:translateY(100%);transition:transform .25s ease}
+.action-sheet.show{transform:translateY(0)}
+.action-sheet-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:8px auto 12px}
+.action-sheet-title{font-size:13px;color:#999;text-align:center;padding:4px 16px 8px}
+.action-sheet-item{display:flex;align-items:center;gap:12px;padding:16px 20px;font-size:16px;color:#333;cursor:pointer;transition:background .1s;-webkit-tap-highlight-color:transparent;min-height:52px}
+.action-sheet-item:active{background:#f0f2f5}
+.action-sheet-item .asi-icon{font-size:20px;width:28px;text-align:center}
+.action-sheet-item .asi-label{flex:1}
+.action-sheet-item.danger{color:#e74c3c}
+.action-sheet-cancel{display:block;width:100%;padding:16px;text-align:center;font-size:16px;color:#666;background:none;border:none;border-top:8px solid #f0f2f5;cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:52px}
+.action-sheet-cancel:active{background:#f0f2f5}
+@media(max-width:600px){
+  /* Header */
+  .header{padding:20px 16px 16px}
+  .header h1{font-size:18px}
+  .header p{font-size:12px}
+  .header .stat-num{font-size:22px}
+  .header .stat-label{font-size:10px}
+  .header .stats{gap:12px}
+  .identity-bar .sb{padding:6px 12px;font-size:13px;min-height:36px}
+  /* Container */
+  .container{padding:12px 10px 120px}
+  /* Filter bar — horizontal scroll */
+  .filter-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px;padding-bottom:4px;gap:6px;scrollbar-width:none;-ms-overflow-style:none}
+  .filter-bar::-webkit-scrollbar{display:none}
+  .filter-group{flex-shrink:0}
+  .filter-divider{display:none}
+  .filter-btn{padding:8px 14px;font-size:13px;min-height:36px;border-radius:18px}
+  .batch-toggle-btn{flex-shrink:0;padding:8px 14px;font-size:13px;min-height:36px;border-radius:18px}
+  /* Todo items */
+  .todo-item{padding:14px 12px;gap:10px}
+  .todo-content{min-width:0}
+  .todo-text{font-size:14px}
+  .todo-meta{gap:5px;margin-top:6px}
+  .todo-tag{font-size:11px;padding:2px 7px}
+  /* Hide desktop action buttons on mobile — use long-press instead */
+  .todo-actions{display:none !important}
+  /* Touch-friendly checkboxes */
+  .todo-checkbox{width:24px;height:24px;min-width:24px;border-radius:6px}
+  .todo-checkbox.checked::after{font-size:14px}
+  .batch-checkbox{width:26px;height:26px;min-width:26px}
+  .batch-checkbox.checked::after{font-size:13px}
+  /* Note area */
+  .todo-note-area{padding:0 12px 12px 36px}
+  .todo-note-area textarea{font-size:16px;min-height:72px}
+  /* Edit panel — bottom sheet style on mobile */
+  .edit-panel{position:fixed;bottom:0;left:0;right:0;z-index:500;margin:0;border-radius:16px 16px 0 0;border-left:none;padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 20px rgba(0,0,0,0.15);max-height:70vh;overflow-y:auto;animation:slideUp .25s ease}
+  .edit-panel input,.edit-panel select{font-size:16px;padding:12px;border-radius:8px;min-height:48px}
+  .edit-panel .edit-row{flex-direction:column;gap:0}
+  .edit-panel label{font-size:14px;margin-top:14px}
+  .edit-panel .edit-save,.edit-panel .edit-cancel{padding:12px 24px;font-size:15px;min-height:44px;border-radius:8px}
+  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  /* Batch mode */
+  .batch-action-bar{position:fixed;bottom:0;left:0;right:0;border-radius:16px 16px 0 0;padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:90;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .batch-action-bar::-webkit-scrollbar{display:none}
+  .batch-count{font-size:13px;flex-shrink:0;min-height:36px;display:flex;align-items:center}
+  .batch-action-btn{padding:8px 14px;font-size:13px;min-height:44px;border-radius:8px;flex-shrink:0}
+  .batch-cancel-btn{padding:8px 14px;font-size:13px;min-height:44px;flex-shrink:0}
+  .batch-dropdown{min-width:200px;border-radius:12px}
+  .batch-dropdown-item{padding:14px 18px;font-size:15px;min-height:44px}
+  /* Batch date input in dropdown */
+  #batch-date-input{font-size:16px;padding:12px;min-height:44px}
+  /* Identity modal */
+  .modal{padding:24px 20px;max-height:90vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;top:auto;max-width:100%;width:100%}
+  .modal h2{font-size:20px}
+  .modal p{font-size:14px;margin-bottom:20px}
+  .identity-opt{padding:16px;border-radius:14px;min-height:56px;font-size:16px}
+  .identity-opt .oe{font-size:26px}
+  .add-identity-btn{padding:14px;font-size:15px;min-height:48px;border-radius:14px}
+  .add-identity-form input{font-size:16px;padding:12px;min-height:48px;border-radius:8px}
+  .add-identity-form .form-save,.add-identity-form .form-cancel{padding:10px 18px;font-size:14px;min-height:44px}
+  /* Log/timeline items */
+  .log-item{padding:10px 0;font-size:13px}
+  .quote-text{font-size:13px}
+  /* Section */
+  .section-header{padding:12px 14px}
+  .section-icon{width:28px;height:28px;font-size:14px;border-radius:6px}
+  .section-title h2{font-size:14px}
+  /* Timeline */
+  .timeline,.quotes,.log-panel{padding:16px 14px}
+}
+</style>
 </style>
 </head>
 <body>
-<div class="modal-overlay hidden" id="identity-modal" onclick="if(event.target===this){}"><div class="modal"><h2>👋 你是谁？</h2><p>选择你的身份，协同编辑待办事项</p><div class="identity-options">
+<div class="modal-overlay hidden" id="identity-modal"><div class="modal"><h2>👋 你是谁？</h2><p>选择你的身份，协同编辑待办事项</p><div class="identity-options" id="identity-options">
 <div class="identity-opt" onclick="selectIdentity('老王')"><span class="oe">🟣</span><div class="oi"><div class="on">老王</div><div class="od">创始人 / 决策者</div></div></div>
 <div class="identity-opt" onclick="selectIdentity('凯哥')"><span class="oe">🟠</span><div class="oi"><div class="on">凯哥</div><div class="od">总经理 / 执行层</div></div></div>
 <div class="identity-opt" onclick="selectIdentity('阿超')"><span class="oe">🟢</span><div class="oi"><div class="on">阿超</div><div class="od">运营 / 教练 / 主播</div></div></div>
+<div id="custom-identity-slots"></div>
 <div class="identity-opt" onclick="selectIdentity('旁观者')"><span class="oe">👀</span><div class="oi"><div class="on">旁观者</div><div class="od">只查看，不操作</div></div></div>
-</div></div></div>
+</div>
+<div class="add-identity-btn" onclick="toggleAddIdentity()">+ 新增人员</div>
+<div class="add-identity-form" id="add-identity-form">
+<input type="text" id="new-identity-name" placeholder="姓名">
+<input type="text" id="new-identity-desc" placeholder="职位描述（可选）">
+<div class="form-actions">
+<button class="form-cancel" onclick="toggleAddIdentity()">取消</button>
+<button class="form-save" onclick="addCustomIdentity()">添加</button>
+</div>
+</div>
+</div></div>
 <div class="toast-container" id="toast-container"></div>
 <div class="header">
 <h1>📋 会议待办事项</h1>
@@ -169,7 +308,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 <button class="filter-btn" onclick="setFilter('owner','凯哥')">🟠 凯哥</button>
 <button class="filter-btn" onclick="setFilter('owner','阿超')">🟢 阿超</button>
 <button class="filter-btn" onclick="setFilter('owner','老王+凯哥')">🟣🟠 老王&凯哥</button>
-<button class="filter-btn" onclick="setFilter('owner','凯哥+阿超')">🟠🟢 凯哥&阿超</button></div></div>
+<button class="filter-btn" onclick="setFilter('owner','凯哥+阿超')">🟠🟢 凯哥&阿超</button></div>
+<button class="batch-toggle-btn" id="batch-toggle-btn" onclick="toggleBatchMode()"><span class="batch-icon">☐</span> 多选</button>
+</div>
+<div class="batch-action-bar" id="batch-action-bar">
+<span class="batch-count" id="batch-count">已选 0 项</span>
+<div class="batch-dd-wrap">
+<button class="batch-action-btn" onclick="toggleBatchDropdown('owner')">负责人 ▼</button>
+<div class="batch-dropdown" id="batch-owner-dropdown"></div>
+</div>
+<div class="batch-dd-wrap">
+<button class="batch-action-btn" onclick="toggleBatchDropdown('tag')">紧急度 ▼</button>
+<div class="batch-dropdown" id="batch-tag-dropdown">
+<div class="batch-dropdown-item" onclick="batchSetTag('紧急')">🔥 设为紧急</div>
+<div class="batch-dropdown-item" onclick="batchSetTag('普通')">📋 设为普通</div>
+</div>
+</div>
+<div class="batch-dd-wrap">
+<button class="batch-action-btn" onclick="toggleBatchDropdown('date')">日期 ▼</button>
+<div class="batch-dropdown" id="batch-date-dropdown">
+<div style="padding:8px"><input type="text" id="batch-date-input" placeholder="输入日期，如 3/28" style="width:100%;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;outline:none" onkeydown="if(event.key==='Enter'){batchSetDate(this.value);closeAllBatchDropdowns()}"></div>
+<div class="batch-dropdown-item" onclick="batchSetDate(document.getElementById('batch-date-input').value);closeAllBatchDropdowns()">应用日期</div>
+</div>
+</div>
+<button class="batch-cancel-btn" onclick="toggleBatchMode()">取消</button>
+</div>
 <div id="sections"></div>
 <div class="timeline" id="timeline"></div>
 <div class="quotes" id="quotes"></div>
@@ -187,6 +350,37 @@ var remoteState={};
 var supabaseReady=false;
 var currentIdentity=localStorage.getItem('todo-identity')||'';
 var logsCollapsed=true;
+var editingItemId=null;
+var batchMode=false;
+var batchSelected={};
+
+// Preset colors for custom identities
+var CUSTOM_COLORS=[
+  {tag:'tag-c1',bg:'#fce4ec',fg:'#c62828',emoji:'🔴'},
+  {tag:'tag-c2',bg:'#fff3e0',fg:'#e65100',emoji:'🟠'},
+  {tag:'tag-c3',bg:'#e8f5e9',fg:'#2e7d32',emoji:'🟢'},
+  {tag:'tag-c4',bg:'#e3f2fd',fg:'#1565c0',emoji:'🔵'},
+  {tag:'tag-c5',bg:'#f3e5f5',fg:'#6a1b9a',emoji:'🟣'},
+  {tag:'tag-c6',bg:'#fff8e1',fg:'#f57f17',emoji:'🟡'},
+  {tag:'tag-c7',bg:'#e0f2f1',fg:'#00695c',emoji:'🟤'}
+];
+
+function getCustomIdentities(){
+  try{return JSON.parse(localStorage.getItem('todo-custom-identities')||'[]');}catch(e){return [];}
+}
+function saveCustomIdentities(arr){localStorage.setItem('todo-custom-identities',JSON.stringify(arr));}
+function getAllOwners(){
+  var owners=['老王','凯哥','阿超'];
+  getCustomIdentities().forEach(function(c){if(owners.indexOf(c.name)<0)owners.push(c.name);});
+  return owners;
+}
+function getTagClassForOwner(owner){
+  var m={'老王':'tag-lw','凯哥':'tag-kg','阿超':'tag-ac','老王+凯哥':'tag-lw-kg','凯哥+阿超':'tag-kg-ac','老王+阿超':'tag-lw-ac'};
+  if(m[owner])return m[owner];
+  var customs=getCustomIdentities();
+  for(var i=0;i<customs.length;i++){if(customs[i].name===owner)return customs[i].tagClass||'tag-normal';}
+  return 'tag-normal';
+}
 function saveState(){localStorage.setItem('todo-v3',JSON.stringify(state));}
 function padZ(n){return n<10?'0'+n:''+n;}
 
@@ -198,8 +392,59 @@ function showToast(msg,type){
   setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},2800);
 }
 
-// Identity
-function showIdentityModal(){document.getElementById('identity-modal').classList.remove('hidden');}
+// ===== Custom Identity (Req 3) =====
+function toggleAddIdentity(){
+  var f=document.getElementById('add-identity-form');
+  f.classList.toggle('open');
+  if(f.classList.contains('open')){
+    document.getElementById('new-identity-name').value='';
+    document.getElementById('new-identity-desc').value='';
+    setTimeout(function(){document.getElementById('new-identity-name').focus();},50);
+  }
+}
+function addCustomIdentity(){
+  var name=document.getElementById('new-identity-name').value.trim();
+  var desc=document.getElementById('new-identity-desc').value.trim();
+  if(!name){showToast('请输入姓名','error');return;}
+  var customs=getCustomIdentities();
+  for(var i=0;i<customs.length;i++){if(customs[i].name===name){showToast('该人员已存在','error');return;}}
+  if(['老王','凯哥','阿超','旁观者'].indexOf(name)>=0){showToast('不能使用已有人名','error');return;}
+  var idx=customs.length%CUSTOM_COLORS.length;
+  var color=CUSTOM_COLORS[idx];
+  customs.push({name:name,desc:desc||'成员',emoji:color.emoji,tagClass:color.tag,bg:color.bg,fg:color.fg});
+  saveCustomIdentities(customs);
+  document.getElementById('add-identity-form').classList.remove('open');
+  renderCustomIdentitySlots();
+  // Add dynamic CSS for this tag class
+  addCustomTagCSS(color.tag,color.bg,color.fg);
+  showToast('已添加 '+name,'success');
+}
+function renderCustomIdentitySlots(){
+  var customs=getCustomIdentities();
+  var el=document.getElementById('custom-identity-slots');
+  el.innerHTML=customs.map(function(c){
+    return '<div class="identity-opt" onclick="selectIdentity(\''+escAttr(c.name)+'\')"><span class="oe">'+escHtml(c.emoji)+'</span><div class="oi"><div class="on">'+escHtml(c.name)+'</div><div class="od">'+escHtml(c.desc)+'</div></div></div>';
+  }).join('');
+}
+function addCustomTagCSS(cls,bg,fg){
+  if(document.getElementById('style-'+cls))return;
+  var s=document.createElement('style');s.id='style-'+cls;
+  s.textContent='.tag-'+cls.replace('tag-','')+'{background:'+bg+';color:'+fg+'}';
+  document.head.appendChild(s);
+}
+function escAttr(s){return s.replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+
+// Init custom identity styles on load
+(function(){
+  var customs=getCustomIdentities();
+  customs.forEach(function(c){addCustomTagCSS(c.tagClass,c.bg,c.fg);});
+})();
+
+// ===== Identity =====
+function showIdentityModal(){
+  renderCustomIdentitySlots();
+  document.getElementById('identity-modal').classList.remove('hidden');
+}
 function selectIdentity(name){
   currentIdentity=name;localStorage.setItem('todo-identity',name);
   document.getElementById('identity-modal').classList.add('hidden');
@@ -207,11 +452,12 @@ function selectIdentity(name){
   showToast('已切换为 '+name,'success');
 }
 function initIdentity(){
+  renderCustomIdentitySlots();
   if(currentIdentity){document.getElementById('identity-display').textContent='当前身份：'+currentIdentity;}
   else{showIdentityModal();}
 }
 
-// Supabase
+// ===== Supabase =====
 var SB_URL='https://cmswoyiuoeqzeassubvw.supabase.co';
 var SB_KEY='sb_publishable_kyhsOoWxO8YEBczAIJsUxQ_9KUmxFV2';
 var sb=null;
@@ -233,19 +479,30 @@ async function loadRemoteState(){
       remoteState[row.todo_id]=row;
       if(row.completed){state[row.todo_id]=true;}else{delete state[row.todo_id];}
       if(row.note){state['note-'+row.todo_id]=row.note;}else{delete state['note-'+row.todo_id];}
+      // Apply remote meta (owner/tag/date) — Req 4
+      var item=ITEM_MAP[row.todo_id];
+      if(item){
+        if(row.owner)item.owner=row.owner;
+        if(row.tag)item.tag=row.tag;
+        if(row.due_date)item.date=row.due_date;
+      }
     });
     saveState();supabaseReady=true;setSyncStatus('✅ 已同步 · 实时',true);
     render();showToast('已同步 '+res.data.length+' 条状态','info');
   }catch(e){console.warn('Remote load fail',e);supabaseReady=false;setSyncStatus('⚠️ 离线模式',false);}
 }
 
-async function upsertRemote(todoId,completed,note){
+async function upsertRemote(todoId,completed,note,metaOwner,metaTag,metaDate){
   if(!sb||!currentIdentity)return false;
   var row=remoteState[todoId]||{};
   var payload={todo_id:todoId,completed:!!completed,note:note!==undefined?note:(row.note||''),
     completed_by:completed?currentIdentity:'',completed_at:completed?new Date().toISOString():null,
     updated_at:new Date().toISOString()};
   if(!completed){payload.completed_by='';payload.completed_at=null;}
+  // Req 4: sync meta fields
+  payload.owner=metaOwner!==undefined?metaOwner:(row.owner||'');
+  payload.tag=metaTag!==undefined?metaTag:(row.tag||'普通');
+  payload.due_date=metaDate!==undefined?metaDate:(row.due_date||'');
   try{
     var res=await sb.from('todo_states').upsert(payload,{onConflict:'todo_id'});
     if(res.error)throw res.error;remoteState[todoId]=payload;return true;
@@ -267,6 +524,11 @@ function subscribeRealtime(){
       else{remoteState[tid]=r;}
       if(r.completed)state[tid]=true;else delete state[tid];
       if(r.note)state['note-'+tid]=r.note;else delete state['note-'+tid];
+      // Req 4: Realtime meta sync
+      var item=ITEM_MAP[tid];
+      if(item && r.owner)item.owner=r.owner;
+      if(item && r.tag)item.tag=r.tag;
+      if(item && r.due_date)item.date=r.due_date;
       saveState();render();
     }).on('postgres_changes',{event:'INSERT',schema:'public',table:'todo_logs'},function(){loadLogs();})
     .subscribe();
@@ -297,14 +559,13 @@ function renderLogs(logs){
 
 function escHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
-// Note toggle
+// ===== Note toggle =====
 function toggleNote(todoId){
   openNotes[todoId]=!openNotes[todoId];
   var el=document.getElementById('note-area-'+todoId);
   if(el){el.classList.toggle('open',openNotes[todoId]);
     if(openNotes[todoId]){var ta=el.querySelector('textarea');if(ta){ta.value=state['note-'+todoId]||'';ta.focus();}}}
 }
-
 function onBlurNote(todoId){
   var ta=document.querySelector('#note-area-'+todoId+' textarea');
   if(!ta)return;var val=ta.value.trim();
@@ -312,20 +573,200 @@ function onBlurNote(todoId){
   if(val===old)return;
   saveNote(todoId,val);
 }
-
 function saveNote(todoId,note){
   state['note-'+todoId]=note;saveState();
+  var item=ITEM_MAP[todoId]||{};
   var row=remoteState[todoId]||{completed:!!state[todoId]};
-  upsertRemote(todoId,row.completed,note);
+  upsertRemote(todoId,row.completed,note,item.owner,item.tag,item.date);
   writeLog(todoId,'note',note?'更新备注':'清除备注');
 }
 
-// Existing helper functions
-function ownerTagClass(o){
-  var m={'老王':'tag-lw','凯哥':'tag-kg','阿超':'tag-ac','老王+凯哥':'tag-lw-kg','凯哥+阿超':'tag-kg-ac','老王+阿超':'tag-lw-ac'};
-  return m[o]||'tag-normal';
+// ===== Single Task Edit (Req 1) =====
+function openEditPanel(todoId){
+  if(batchMode)return; // Don't open edit panel in batch mode
+  if(!currentIdentity||currentIdentity==='旁观者'){showToast('旁观者无法编辑','error');return;}
+  // Close any existing edit panel
+  if(editingItemId!==null)closeEditPanel();
+  editingItemId=todoId;
+  var item=ITEM_MAP[todoId];
+  if(!item)return;
+  var el=document.getElementById('edit-panel-'+todoId);
+  if(!el)return;
+  // Populate fields
+  var textInput=el.querySelector('.edit-text');
+  var ownerSelect=el.querySelector('.edit-owner');
+  var tagSelect=el.querySelector('.edit-tag');
+  var dateInput=el.querySelector('.edit-date');
+  if(textInput)textInput.value=item.text;
+  // Build owner options
+  var owners=getAllOwners();
+  if(ownerSelect){
+    ownerSelect.innerHTML=owners.map(function(o){
+      var sel=o===item.owner?'selected':'';
+      return '<option value="'+escAttr(o)+'" '+sel+'>'+escHtml(o)+'</option>';
+    }).join('<option value="__custom__">✏️ 自定义...</option>');
+    ownerSelect.onchange=function(){
+      if(this.value==='__custom__'){
+        var val=prompt('输入负责人姓名：');
+        if(val&&val.trim()){this.innerHTML+=ownerSelect.innerHTML;var opt=document.createElement('option');opt.value=val.trim();opt.textContent=val.trim();opt.selected=true;this.insertBefore(opt,this.firstChild);this.value=val.trim();}
+        else{this.value=item.owner;}
+      }
+    };
+  }
+  if(tagSelect){
+    tagSelect.innerHTML='<option value="紧急"'+(item.tag==='紧急'?' selected':'')+'>🔥 紧急</option><option value="普通"'+(item.tag==='普通'?' selected':'')+'>📋 普通</option>';
+  }
+  if(dateInput)dateInput.value=item.date||'';
+  el.classList.add('open');
+}
+function closeEditPanel(){
+  if(editingItemId===null)return;
+  var el=document.getElementById('edit-panel-'+editingItemId);
+  if(el)el.classList.remove('open');
+  editingItemId=null;
+}
+function saveEditPanel(todoId){
+  var el=document.getElementById('edit-panel-'+todoId);
+  if(!el)return;
+  var item=ITEM_MAP[todoId];
+  if(!item)return;
+  var newText=el.querySelector('.edit-text').value.trim();
+  var newOwner=el.querySelector('.edit-owner').value;
+  var newTag=el.querySelector('.edit-tag').value;
+  var newDate=el.querySelector('.edit-date').value.trim();
+  if(!newText){showToast('任务描述不能为空','error');return;}
+  item.text=newText;
+  item.owner=newOwner;
+  item.tag=newTag;
+  item.date=newDate;
+  // Update remote state meta
+  var row=remoteState[todoId]||{completed:!!state[todoId],note:state['note-'+todoId]||''};
+  row.owner=newOwner;row.tag=newTag;row.due_date=newDate;
+  upsertRemote(todoId,row.completed,row.note,newOwner,newTag,newDate);
+  writeLog(todoId,'edit','编辑任务元数据');
+  el.classList.remove('open');
+  editingItemId=null;
+  render();
+  showToast('已更新任务','success');
 }
 
+// ===== Batch Mode (Req 2) =====
+function toggleBatchMode(){
+  batchMode=!batchMode;
+  batchSelected={};
+  var btn=document.getElementById('batch-toggle-btn');
+  var bar=document.getElementById('batch-action-bar');
+  if(batchMode){
+    btn.classList.add('active');
+    btn.innerHTML='<span class="batch-icon">☑</span> 多选';
+    bar.classList.add('show');
+    closeEditPanel();
+  }else{
+    btn.classList.remove('active');
+    btn.innerHTML='<span class="batch-icon">☐</span> 多选';
+    bar.classList.remove('show');
+    closeAllBatchDropdowns();
+  }
+  updateBatchCount();
+  render();
+}
+function toggleBatchSelect(todoId){
+  if(!batchMode)return;
+  if(batchSelected[todoId])delete batchSelected[todoId];
+  else batchSelected[todoId]=true;
+  updateBatchCount();
+  // Update UI without full re-render
+  var row=document.querySelector('.todo-item[data-id="'+todoId+'"]');
+  var cb=document.querySelector('.todo-item[data-id="'+todoId+'"] .batch-checkbox');
+  if(row)row.classList.toggle('batch-selected',!!batchSelected[todoId]);
+  if(cb)cb.classList.toggle('checked',!!batchSelected[todoId]);
+}
+function updateBatchCount(){
+  var count=Object.keys(batchSelected).length;
+  document.getElementById('batch-count').textContent='已选 '+count+' 项';
+}
+function getSelectedIds(){return Object.keys(batchSelected).map(Number);}
+function toggleBatchDropdown(type){
+  closeAllBatchDropdowns();
+  if(type==='owner'){
+    // Build owner dropdown dynamically
+    var dd=document.getElementById('batch-owner-dropdown');
+    var owners=getAllOwners();
+    var html=owners.map(function(o){return '<div class="batch-dropdown-item" onclick="batchSetOwner(\''+escAttr(o)+'\')">'+escHtml(o)+'</div>';}).join('');
+    html+='<div class="batch-dropdown-item" onclick="promptBatchOwner()">✏️ 分配给...</div>';
+    dd.innerHTML=html;
+    dd.classList.add('show');
+  }else if(type==='tag'){
+    document.getElementById('batch-tag-dropdown').classList.add('show');
+  }else if(type==='date'){
+    document.getElementById('batch-date-dropdown').classList.add('show');
+    setTimeout(function(){document.getElementById('batch-date-input').focus();},50);
+  }
+}
+function closeAllBatchDropdowns(){
+  document.querySelectorAll('.batch-dropdown').forEach(function(d){d.classList.remove('show');});
+}
+function promptBatchOwner(){
+  closeAllBatchDropdowns();
+  var val=prompt('输入负责人姓名：');
+  if(val&&val.trim())batchSetOwner(val.trim());
+}
+async function batchSetOwner(owner){
+  closeAllBatchDropdowns();
+  var ids=getSelectedIds();
+  if(!ids.length){showToast('请先选择任务','error');return;}
+  ids.forEach(function(id){
+    var item=ITEM_MAP[id];
+    if(item){
+      item.owner=owner;
+      var row=remoteState[id]||{completed:!!state[id],note:state['note-'+id]||''};
+      row.owner=owner;
+      upsertRemote(id,row.completed,row.note,owner,item.tag,item.date);
+    }
+  });
+  showToast('已更新 '+ids.length+' 项任务的负责人','success');
+  batchSelected={};updateBatchCount();render();
+}
+async function batchSetTag(tag){
+  closeAllBatchDropdowns();
+  var ids=getSelectedIds();
+  if(!ids.length){showToast('请先选择任务','error');return;}
+  ids.forEach(function(id){
+    var item=ITEM_MAP[id];
+    if(item){
+      item.tag=tag;
+      var row=remoteState[id]||{completed:!!state[id],note:state['note-'+id]||''};
+      row.tag=tag;
+      upsertRemote(id,row.completed,row.note,item.owner,tag,item.date);
+    }
+  });
+  showToast('已更新 '+ids.length+' 项任务的紧急度','success');
+  batchSelected={};updateBatchCount();render();
+}
+async function batchSetDate(date){
+  closeAllBatchDropdowns();
+  var ids=getSelectedIds();
+  if(!ids.length){showToast('请先选择任务','error');return;}
+  date=date.trim();
+  ids.forEach(function(id){
+    var item=ITEM_MAP[id];
+    if(item){
+      item.date=date;
+      var row=remoteState[id]||{completed:!!state[id],note:state['note-'+id]||''};
+      row.due_date=date;
+      upsertRemote(id,row.completed,row.note,item.owner,item.tag,date);
+    }
+  });
+  showToast('已更新 '+ids.length+' 项任务的日期','success');
+  batchSelected={};updateBatchCount();render();
+}
+// Close batch dropdowns when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.batch-dd-wrap'))closeAllBatchDropdowns();
+});
+
+// ===== Existing helpers =====
+function ownerTagClass(o){return getTagClassForOwner(o);}
 function matchFilter(item){
   if(filters.status==='urgent'&&(item.tag!=='紧急'||state[item.id]))return false;
   if(filters.status==='pending'&&state[item.id])return false;
@@ -338,7 +779,6 @@ function matchFilter(item){
   }
   return true;
 }
-
 function formatCompletedBy(todoId){
   var r=remoteState[todoId];
   if(!r||!r.completed_by||!r.completed_at)return '';
@@ -348,6 +788,7 @@ function formatCompletedBy(todoId){
   return '<span class="completed-by-tag" title="'+escHtml(r.completed_by)+' 于 '+ds+' '+ts+' 完成">✓ '+escHtml(r.completed_by)+' '+ts+'</span>';
 }
 
+// ===== Render =====
 function render(){
   var total=0,done=0,urgent=0;
   DATA.sections.forEach(function(s){s.items.forEach(function(item){
@@ -360,6 +801,7 @@ function render(){
   document.getElementById('progress-fill').style.width=(total?(done/total*100):0)+'%';
 
   var el=document.getElementById('sections');el.innerHTML='';
+  var bodyClass=batchMode?'section-body batch-mode':'section-body';
   DATA.sections.forEach(function(section){
     var filtered=section.items.filter(matchFilter);
     if(!filtered.length)return;
@@ -368,18 +810,28 @@ function render(){
     var d=document.createElement('div');d.className='section';
     var itemsHtml=filtered.map(function(item){
       var isDone=!!state[item.id];
+      var isBatchSel=!!batchSelected[item.id];
       var noteText=state['note-'+item.id]||'';
       var noteOpen=openNotes[item.id];
+      var isEditing=editingItemId===item.id;
       var noteHtml='<div class="todo-note-area'+(noteOpen?' open':'')+'" id="note-area-'+item.id+'">'
         +'<textarea placeholder="添加备注..." onblur="onBlurNote('+item.id+')">'+escHtml(noteText)+'</textarea>'
         +'<div class="note-hint">失焦自动保存</div></div>';
-      return '<div class="todo-item '+(isDone?'done':'')+'" data-id="'+item.id+'">'
+      var editHtml='<div class="edit-panel'+(isEditing?' open':'')+'" id="edit-panel-'+item.id+'">'
+        +'<label>任务描述</label><input class="edit-text" type="text" value="">'
+        +'<div class="edit-row"><div><label>负责人</label><select class="edit-owner"></select></div>'
+        +'<div><label>紧急程度</label><select class="edit-tag"></select></div>'
+        +'<div><label>截止日期</label><input class="edit-date" type="text" placeholder="如 3/28"></div></div>'
+        +'<div class="edit-actions"><button class="edit-cancel" onclick="event.stopPropagation();closeEditPanel()">取消</button>'
+        +'<button class="edit-save" onclick="event.stopPropagation();saveEditPanel('+item.id+')">保存</button></div></div>';
+      return '<div class="todo-item '+(isDone?'done':'')+(isBatchSel?' batch-selected':'')+'" data-id="'+item.id+'">'
+        +'<div class="batch-checkbox '+(isBatchSel?'checked':'')+'" onclick="event.stopPropagation();toggleBatchSelect('+item.id+')"></div>'
         +'<div class="todo-checkbox '+(isDone?'checked':'')+'" onclick="event.stopPropagation();toggleItem('+item.id+')" title="'+(isDone?'标记为未完成':'标记为完成')+'"></div>'
-        +'<div class="todo-content"><div class="todo-text">'+escHtml(item.text)+'</div>'
+        +'<div class="todo-content"><div class="todo-text" onclick="event.stopPropagation();openEditPanel('+item.id+')">'+escHtml(item.text)+'</div>'
         +'<div class="todo-meta">'
-        +'<span class="todo-tag '+ownerTagClass(item.owner)+'">👤 '+item.owner+'</span>'
+        +'<span class="todo-tag '+ownerTagClass(item.owner)+'">👤 '+escHtml(item.owner)+'</span>'
         +(item.tag==='紧急'?'<span class="todo-tag tag-urgent">🔥 紧急</span>':'<span class="todo-tag tag-normal">📋 普通</span>')
-        +(item.date?'<span class="todo-tag tag-date">📅 '+item.date+'</span>':'')
+        +(item.date?'<span class="todo-tag tag-date">📅 '+escHtml(item.date)+'</span>':'')
         +(isDone?'<span class="todo-tag tag-done">✅ 完成</span>':'')
         +formatCompletedBy(item.id)
         +(noteText?'<span class="note-toggle-btn" onclick="event.stopPropagation();toggleNote('+item.id+')" title="有备注">📝</span>':'')
@@ -388,6 +840,7 @@ function render(){
         +'<button class="todo-btn" onclick="event.stopPropagation();toggleNote('+item.id+')" title="备注">📝</button>'
         +'<button class="todo-btn delete" onclick="event.stopPropagation();deleteItem('+item.id+')" title="删除">✕</button>'
         +'</div></div>'
+        +editHtml
         +noteHtml;
     }).join('');
     d.innerHTML='<div class="section-header" onclick="toggleSection(\''+section.id+'\')">'
@@ -395,7 +848,7 @@ function render(){
       +'<h2>'+section.title+'</h2></div>'
       +'<div style="display:flex;align-items:center;gap:10px"><span class="section-count">'+pending+'/'+section.items.length+'</span>'
       +'<span class="section-toggle '+(collapsed?'collapsed':'')+'">▼</span></div></div>'
-      +'<div class="section-body '+(collapsed?'collapsed':'')+'" id="section-'+section.id+'">'+itemsHtml+'</div>';
+      +'<div class="'+bodyClass+' '+(collapsed?'collapsed':'')+'" id="section-'+section.id+'">'+itemsHtml+'</div>';
     el.appendChild(d);
   });
 
@@ -412,29 +865,26 @@ async function toggleItem(id){
   if(!currentIdentity||currentIdentity==='旁观者'){showToast(currentIdentity?'旁观者无法操作':'请先选择身份','error');return;}
   var wasDone=!!state[id];
   var newDone=!wasDone;
-  // Optimistic update
   if(newDone)state[id]=true;else delete state[id];
   saveState();render();
-  // Write to Supabase
   if(supabaseReady){
-    var ok=await upsertRemote(id,newDone);
+    var item=ITEM_MAP[id]||{};
+    var row=remoteState[id]||{note:state['note-'+id]||''};
+    var ok=await upsertRemote(id,newDone,row.note,item.owner,item.tag,item.date);
     if(!ok){
-      // Rollback
       if(wasDone)state[id]=true;else delete state[id];
       saveState();render();showToast('同步失败，已回滚','error');return;
     }
     await writeLog(id,newDone?'complete':'uncomplete','');
     showToast(newDone?'已完成 ✓':'已取消','success');
-  }else{
-    showToast('离线模式：仅本地保存','info');
-  }
+  }else{showToast('离线模式：仅本地保存','info');}
 }
 
 function toggleSection(id){state['c-'+id]=!state['c-'+id];saveState();render();}
 function deleteItem(id){
   if(!confirm('确认删除？'))return;
   DATA.sections.forEach(function(s){s.items=s.items.filter(function(i){return i.id!==id;});});
-  delete state[id];saveState();render();
+  delete state[id];delete ITEM_MAP[id];saveState();render();
   if(supabaseReady&&sb){sb.from('todo_states').delete().eq('todo_id',id).then(function(){});}
 }
 function setFilter(type,val){
@@ -461,13 +911,8 @@ initIdentity();
 render();
 if(sb){
   setSyncStatus('同步中...','true');
-  loadRemoteState().then(function(){
-    subscribeRealtime();
-    loadLogs();
-  });
-}else{
-  setSyncStatus('⚠️ 离线模式',false);
-}
+  loadRemoteState().then(function(){subscribeRealtime();loadLogs();});
+}else{setSyncStatus('⚠️ 离线模式',false);}
 </script>
 </body>
 </html>

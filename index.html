@@ -225,8 +225,8 @@ async function loadRemoteState(){
     remoteState={};
     res.data.forEach(function(row){
       remoteState[row.todo_id]=row;
-      if(row.completed)state[row.todo_id]=true;
-      if(row.note)state['note-'+row.todo_id]=row.note;
+      if(row.completed){state[row.todo_id]=true;}else{delete state[row.todo_id];}
+      if(row.note){state['note-'+row.todo_id]=row.note;}else{delete state['note-'+row.todo_id];}
     });
     saveState();supabaseReady=true;setSyncStatus('✅ 已同步 · 实时',true);
     render();showToast('已同步 '+res.data.length+' 条状态','info');
@@ -402,7 +402,7 @@ function render(){
 }
 
 async function toggleItem(id){
-  if(currentIdentity==='旁观者'){showToast('旁观者无法操作','error');return;}
+  if(!currentIdentity||currentIdentity==='旁观者'){showToast(currentIdentity?'旁观者无法操作':'请先选择身份','error');return;}
   var wasDone=!!state[id];
   var newDone=!wasDone;
   // Optimistic update
@@ -428,6 +428,7 @@ function deleteItem(id){
   if(!confirm('确认删除？'))return;
   DATA.sections.forEach(function(s){s.items=s.items.filter(function(i){return i.id!==id;});});
   delete state[id];saveState();render();
+  if(supabaseReady&&sb){sb.from('todo_states').delete().eq('todo_id',id).then(function(){});}
 }
 function setFilter(type,val){
   filters[type]=val;
